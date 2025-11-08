@@ -1,0 +1,141 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import axios from "axios";
+import { nanoid } from "nanoid";
+import { Plus, Minus } from "lucide-react";
+import styles from "./ProductDetails.module.scss";
+import CanvasEditor from "@/component/CanvasEditor/CanvasEditor";
+
+const ProductDetails = () => {
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const [selectedSize, setSelectedSize] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [activeSection, setActiveSection] = useState(null);
+  const [designPng, setDesignPng] = useState("");
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const res = await axios.get(`${apiUrl}/v2/product/${id}`, {
+          headers: { "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10" },
+        });
+        setProduct(res?.data?.data);
+      } catch (error) {
+        console.error("Error fetching product:", error);
+      }
+    };
+    if (id) fetchProduct();
+  }, [id, apiUrl]);
+
+  const addToCart = async () => {
+    if (product?.configuration?.length > 0 && !selectedSize) {
+      alert("Please select a size.");
+      return;
+    }
+
+    const payload = {
+      id: nanoid(),
+      productId: product.id,
+      quantity,
+      designPng, // <-- custom design
+      options: [{ value: selectedSize || "default" }],
+      // ... other fields
+    };
+
+    try {
+      setLoading(true);
+      await axios.post(`${apiUrl}/v1/cart`, payload, {
+        headers: {
+          "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_TOKEN}`,
+        },
+      });
+      alert("Added to cart!");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!product) return <div className={styles.loading}>Loading...</div>;
+
+  return (
+    <div className={styles.container}>
+      {/* Canvas Editor */}
+      <CanvasEditor
+        shirtUrl={product.productImages?.[0]}
+        batmanUrl={product.productImages?.[1]}
+        onDesignReady={setDesignPng}
+      />
+
+      {/* Info */}
+      <div className={styles.infoSection}>
+        <h1>{product.name}</h1>
+        <p className={styles.subtitle}>{product.subtitle}</p>
+
+        <div className={styles.priceSection}>
+          {product.discountedPrice ? (
+            <>
+              <p className={styles.discountedPrice}>₹ {product.discountedPrice}</p>
+              <p className={styles.basePrice}>₹ {product.basePrice}</p>
+            </>
+          ) : (
+            <p className={styles.price}>₹ {product.basePrice}</p>
+          )}
+        </div>
+
+        {product.configuration?.[0]?.options?.length > 0 && (
+          <div className={styles.sizes}>
+            <h4>Sizes</h4>
+            <div className={styles.sizeOptions}>
+              {product.configuration[0].options.map((s) => (
+                <button
+                  key={s.value}
+                  className={`${styles.sizeBtn} ${selectedSize === s.value ? styles.activeSize : ""}`}
+                  onClick={() => setSelectedSize(s.value)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button className={styles.addToCart} onClick={addToCart} disabled={loading}>
+          {loading ? "ADDING..." : "ADD TO BAG"}
+        </button>
+
+        <div className={styles.accordion}>
+          {[
+            { title: "DETAILS", content: product.description },
+            { title: "CARE", content: product.care },
+          ].map((sec) => (
+            <div key={sec.title} className={styles.accordionItem}>
+              <div
+                className={styles.accordionHeader}
+                onClick={() => setActiveSection(activeSection === sec.title ? null : sec.title)}
+              >
+                <h3>{sec.title}</h3>
+                {activeSection === sec.title ? <Minus /> : <Plus />}
+              </div>
+              <div
+                className={`${styles.accordionContent} ${activeSection === sec.title ? styles.active : ""}`}
+              >
+                <p>{sec.content || "No information available."}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProductDetails;

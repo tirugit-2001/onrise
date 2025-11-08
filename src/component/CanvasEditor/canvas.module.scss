@@ -1,0 +1,141 @@
+.canvasSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.fontTabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.8rem;
+  background: #f9f9f9;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+}
+
+.fontTab {
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  border: none;
+  background: #f6e6b2;
+  cursor: pointer;
+  font-weight: 500;
+  color: #333;
+  transition: all 0.2s ease-in-out;
+}
+
+.fontTab:hover {
+  background: #f8d86a;
+}
+
+.fontTab.active {
+  background: #f9cc50;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+}
+
+.controlRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.colorPicker,
+.sizeSlider {
+  cursor: pointer;
+}
+
+.textInput {
+  width: 90%;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  resize: none;
+}
+
+
+.bottomToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff3e1;
+  border: 1px solid #f5c97b;
+  border-radius: 50px;
+  padding: 0.4rem 0.8rem;
+  width: fit-content;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  gap: 0.8rem;
+}
+
+.toolbarGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.toolButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #3d3d3d;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  padding: 0.3rem 0.8rem;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  .icon {
+    font-size: 22px;
+    font-weight: 600;
+  }
+
+  .label {
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+  }
+}
+
+.divider {
+  width: 1px;
+  height: 30px;
+  background: #d6b77b;
+  opacity: 0.6;
+}
+
+.closeButton {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid #f5c97b;
+  background: #fffdf8;
+  color: #3d3d3d;
+  font-size: 22px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  transition: background 0.2s ease-in-out;
+
+  &:hover {
+    background: #ffe6b5;
+  }
+}
+

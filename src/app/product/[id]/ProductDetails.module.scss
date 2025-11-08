@@ -1,0 +1,163 @@
+.container {
+  display: flex;
+  gap: 3rem;
+  padding: 2rem 4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  @media (max-width: 1024px) {
+    gap: 2rem;
+    padding: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+}
+
+/* IMAGE SECTION */
+.imageSection {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .mainImage {
+    border-radius: 10px;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+}
+
+/* INFO SECTION */
+.infoSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 600;
+
+    @media (max-width: 768px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  .subtitle {
+    color: #666;
+    font-size: 1rem;
+  }
+
+  .price {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-top: 0.5rem;
+  }
+
+  .sizes {
+    margin-top: 1.5rem;
+
+    h4 {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .sizeOptions {
+      display: flex;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    .sizeBtn {
+      border: 1px solid #000;
+      background: #fff;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 0.9rem;
+      border-radius: 4px;
+
+      &:hover {
+        background: #f8f8f8;
+      }
+    }
+
+    .activeSize {
+      border: 2px solid #c55f17;
+    }
+  }
+
+  .addToCart {
+    margin-top: 1.5rem;
+    background: #ff6b00;
+    color: #fff;
+    border: none;
+    padding: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+    width: 100%;
+
+    &:hover {
+      background: #c55f17;
+    }
+  }
+
+  /* Accordion Section */
+  .accordion {
+    border-top: 1px solid #eee;
+    margin-top: 1.5rem;
+
+    .accordionItem {
+      border-bottom: 1px solid #eee;
+      padding: 1rem 0;
+
+      .accordionHeader {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+
+        h3 {
+          font-size: 1rem;
+          font-weight: 600;
+          color: #000;
+        }
+
+        svg {
+          transition: transform 0.3s ease;
+        }
+
+        &:hover {
+          color: #c55f17;
+        }
+      }
+
+      .accordionContent {
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(-5px);
+        transition: all 0.35s ease;
+
+        &.active {
+          max-height: 500px; /* allows space for content */
+          opacity: 1;
+          transform: translateY(0);
+          margin-top: 0.8rem;
+        }
+
+        p {
+          color: #444;
+          font-size: 0.95rem;
+          line-height: 1.5;
+        }
+      }
+    }
+  }
+}

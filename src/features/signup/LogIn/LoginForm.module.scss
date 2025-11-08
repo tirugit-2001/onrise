@@ -1,0 +1,80 @@
+.loginForm {
+  text-align: center;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #222;
+  line-height: 1.5;
+  margin-bottom: 12px;
+
+  span {
+    color: #c45a00;
+    font-weight: 600;
+  }
+}
+
+.subtitle {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.helper {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    border-color: #ff7b00;
+    outline: none;
+  }
+}
+
+.continueBtn {
+  width: 100%;
+  background: #ff7b00;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 10px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: #e66f00;
+  }
+}
+
+.terms {
+  font-size: 0.8rem;
+  color: #777;
+  margin-top: 14px;
+  line-height: 1.4;
+
+  a {
+    color: #ff7b00;
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+
