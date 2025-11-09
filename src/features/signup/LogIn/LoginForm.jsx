@@ -2,50 +2,57 @@
 
 import React, { useState } from "react";
 import styles from "./LoginForm.module.scss";
-import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
-import axios from "axios";
+import { auth } from "@/firebase/config";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
 const LoginForm = ({ onContinue }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const { executeRecaptcha } = useGoogleReCaptcha();
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const [otpSent, setOtpSent] = useState(false);
 
-  const handleContinue = async () => {
-    if (!executeRecaptcha) {
-      console.error("Recaptcha not ready");
-      return;
-    }
-
-    try {
-      // Get reCAPTCHA token
-      const recaptchaToken = await executeRecaptcha("login");
-
-      console.log(recaptchaToken, "sjjususuu");
-      // Send both phone number + recaptcha token to Node backend
-      const res = await axios.post(
-        `https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key=AIzaSyC-mvRzLqUwy4vddFlEXFvLEdiR1QvFFMk`,
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        "recaptcha-container",
         {
-          phoneNumber: `+91${phoneNumber}`,
-          recaptchaToken,
-          captchaResponse: "NO_RECAPTCHA",
-          clientType: "CLIENT_TYPE_WEB",
-          recaptchaVersion: "RECAPTCHA_ENTERPRISE",
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
+          size: "invisible", // or "normal"
+          callback: (response) => {
+            console.log("Recaptcha verified:", response);
           },
         }
       );
+    }
+  };
 
-      const data = await res.json();
-      console.log("Backend response:", data);
+  const handleContinue = async () => {
+    if (!phoneNumber) return alert("Enter phone number");
 
-      if (res.ok) {
-        onContinue();
-      }
+    setupRecaptcha();
+
+    const appVerifier = window.recaptchaVerifier;
+
+    try {
+      const confirmationResult = await signInWithPhoneNumber(
+        auth,
+        `+91${phoneNumber}`,
+        appVerifier
+      );
+      window.confirmationResult = confirmationResult;
+      setOtpSent(true);
+      console.log("OTP sent successfully!");
     } catch (error) {
       console.error("Error sending OTP:", error);
+      alert(error.message);
+    }
+  };
+
+  const verifyOTP = async (otp) => {
+    try {
+      const result = await window.confirmationResult.confirm(otp);
+      console.log("User signed in:", result.user);
+      onContinue?.();
+    } catch (error) {
+      console.error("OTP verification failed:", error);
     }
   };
 
@@ -69,14 +76,21 @@ const LoginForm = ({ onContinue }) => {
         onChange={(e) => setPhoneNumber(e.target.value)}
       />
 
+      <div id="recaptcha-container"></div>
+
       <button className={styles.continueBtn} onClick={handleContinue}>
         Continue
       </button>
 
-      <p className={styles.terms}>
-        By signing in you agree to our <a href="#">Terms of Service</a> and{" "}
-        <a href="#">Privacy Policy</a>.
-      </p>
+      {otpSent && (
+        <div>
+          <input
+            type="text"
+            placeholder="Enter OTP"
+            onChange={(e) => verifyOTP(e.target.value)}
+          />
+        </div>
+      )}
     </div>
   );
 };

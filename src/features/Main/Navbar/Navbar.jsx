@@ -15,7 +15,6 @@ import Image from "next/image";
 import logo from "@/assessts/light-2x.webp";
 import DynamicModal from "@/component/Modal/Modal";
 import LoginForm from "@/features/signup/LogIn/LoginForm";
-import OTPModal from "@/features/signup/OTPModal/OTPModal";
 import { useRouter } from "next/navigation";
 
 const Navbar = () => {
@@ -83,16 +82,9 @@ const Navbar = () => {
         open={isLoginModalVisible}
         onClose={() => setIsLoginModalVisible(false)}
       >
-        <LoginForm onContinue={handleContinue} />
+        <LoginForm onContinue={handleContinue} setIsLoginModalVisible={setIsLoginModalVisible}/>
       </DynamicModal>
 
-      {/* OTP Modal */}
-      <DynamicModal
-        open={isOtpModalVisible}
-        onClose={() => setIsOtpModalVisible(false)}
-      >
-        <OTPModal />
-      </DynamicModal>
     </>
   );
 };

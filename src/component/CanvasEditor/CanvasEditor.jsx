@@ -32,7 +32,9 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
   const [editing, setEditing] = useState(false);
   const [charCount, setCharCount] = useState(0);
 
-  // Load shirt
+  /* ------------------------------------------------- */
+  /* Load shirt image */
+  /* ------------------------------------------------- */
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -41,7 +43,9 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
     img.onerror = () => setShirtImg(null);
   }, [shirtUrl]);
 
-  // Draw canvas
+  /* ------------------------------------------------- */
+  /* Draw canvas (skip text while editing) */
+  /* ------------------------------------------------- */
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -75,26 +79,26 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
     }
   }, [shirtImg, text, font, color, size, textX, textY, editing]);
 
-  useEffect(() => {
-    draw();
-  }, [draw]);
+  useEffect(() => draw(), [draw]);
 
-  // Start editing
+  /* ------------------------------------------------- */
+  /* Start editing – fill the editor with current text */
+  /* ------------------------------------------------- */
   const startEdit = useCallback(() => {
     setEditing(true);
     setToolbarOpen(true);
     setCharCount(text.replace(/\n/g, "").length);
 
-    if (wrapperRef.current) {
-      wrapperRef.current.style.pointerEvents = "none";
-    }
+    // disable canvas interaction
+    if (wrapperRef.current) wrapperRef.current.style.pointerEvents = "none";
 
-    setTimeout(() => {
+    // set text **once** (after render)
+    requestAnimationFrame(() => {
       if (editDivRef.current) {
-        editDivRef.current.textContent = text; // set plain text
+        editDivRef.current.textContent = text;
         editDivRef.current.focus();
 
-        // Place cursor at end
+        // cursor at the end
         const range = document.createRange();
         const sel = window.getSelection();
         range.selectNodeContents(editDivRef.current);
@@ -102,10 +106,12 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
         sel?.removeAllRanges();
         sel?.addRange(range);
       }
-    }, 0);
+    });
   }, [text]);
 
-  // Finish editing
+  /* ------------------------------------------------- */
+  /* Finish editing – save text */
+  /* ------------------------------------------------- */
   const finishEdit = useCallback(() => {
     if (editDivRef.current) {
       const raw = editDivRef.current.innerText.replace(/\n$/, "");
@@ -114,99 +120,136 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
       setCharCount(clean.replace(/\n/g, "").length);
     }
     setEditing(false);
-    if (wrapperRef.current) {
-      wrapperRef.current.style.pointerEvents = "auto";
-    }
+    if (wrapperRef.current) wrapperRef.current.style.pointerEvents = "auto";
   }, []);
 
-  // Character limit
+  /* ------------------------------------------------- */
+  /* Character limit */
+  /* ------------------------------------------------- */
   const handleEditKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       finishEdit();
       return;
     }
-
-    const current = editDivRef.current?.innerText || "";
-    const withoutNewline = current.replace(/\n/g, "");
-    if (withoutNewline.length >= 40 && e.key !== "Backspace" && e.key !== "Delete") {
+    const cur = editDivRef.current?.innerText || "";
+    const noNL = cur.replace(/\n/g, "");
+    if (noNL.length >= 40 && e.key !== "Backspace" && e.key !== "Delete") {
       e.preventDefault();
     }
   };
 
   const handleEditInput = () => {
     if (editDivRef.current) {
-      const withoutNewline = editDivRef.current.innerText.replace(/\n/g, "");
-      setCharCount(withoutNewline.length);
+      const noNL = editDivRef.current.innerText.replace(/\n/g, "");
+      setCharCount(noNL.length);
     }
   };
 
-  // Mouse events
+  /* ------------------------------------------------- */
+  /* Unified mouse + touch handling */
+  /* ------------------------------------------------- */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const onMouseDown = (e) => {
+    let isDragging = false;
+    let startX = 0,
+      startY = 0;
+    let tapCount = 0;
+    let lastTapTime = 0;
+    const DOUBLE_TAP_DELAY = 300;
+
+    const getPointer = (e) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const touch = e.touches ? e.touches[0] : e;
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top,
+      };
+    };
+
+    const startHandler = (e) => {
+      const { x, y } = getPointer(e);
+      startX = x;
+      startY = y;
+
+      // drag start
       if (Math.hypot(x - textX, y - textY) < 80) {
-        setDragging(true);
+        isDragging = true;
+        e.preventDefault();
       }
+
+      // tap detection
+      const now = Date.now();
+      if (now - lastTapTime < DOUBLE_TAP_DELAY) tapCount++;
+      else tapCount = 1;
+      lastTapTime = now;
+
+      setTimeout(() => {
+        if (tapCount === 2) {
+          startEdit(); // double‑tap → edit
+        } else if (tapCount === 1) {
+          // single tap → toolbar
+          const lines = text.split("\n");
+          const lineHeight = size * 1.2;
+          const totalH = lines.length * lineHeight;
+          const textTop = textY - totalH / 2;
+          const textBottom = textY + totalH / 2;
+          const textLeft = textX - 200;
+          const textRight = textX + 200;
+
+          if (x > textLeft && x < textRight && y > textTop && y < textBottom) {
+            setToolbarOpen(true);
+          }
+        }
+        tapCount = 0;
+      }, DOUBLE_TAP_DELAY);
     };
 
-    const onMouseMove = (e) => {
-      if (!dragging) return;
-      const rect = canvas.getBoundingClientRect();
-      setTextX(e.clientX - rect.left);
-      setTextY(e.clientY - rect.top);
+    const moveHandler = (e) => {
+      if (!isDragging) return;
+      const { x, y } = getPointer(e);
+      setTextX(x);
+      setTextY(y);
+      e.preventDefault();
     };
 
-    const onMouseUp = () => setDragging(false);
-
-    const onClick = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      const lines = text.split("\n");
-      const lineHeight = size * 1.2;
-      const totalH = lines.length * lineHeight;
-      const textTop = textY - totalH / 2;
-      const textBottom = textY + totalH / 2;
-      const textLeft = textX - 200;
-      const textRight = textX + 200;
-
-      if (x > textLeft && x < textRight && y > textTop && y < textBottom) {
-        setToolbarOpen(true);
-      }
+    const endHandler = () => {
+      isDragging = false;
     };
 
-    const onDblClick = () => {
-      startEdit();
-    };
+    /* mouse */
+    canvas.addEventListener("mousedown", startHandler);
+    canvas.addEventListener("mousemove", moveHandler);
+    canvas.addEventListener("mouseup", endHandler);
 
-    canvas.addEventListener("mousedown", onMouseDown);
-    canvas.addEventListener("mousemove", onMouseMove);
-    canvas.addEventListener("mouseup", onMouseUp);
-    canvas.addEventListener("click", onClick);
-    canvas.addEventListener("dblclick", onDblClick);
+    /* touch */
+    canvas.addEventListener("touchstart", startHandler, { passive: false });
+    canvas.addEventListener("touchmove", moveHandler, { passive: false });
+    canvas.addEventListener("touchend", endHandler);
 
     return () => {
-      canvas.removeEventListener("mousedown", onMouseDown);
-      canvas.removeEventListener("mousemove", onMouseMove);
-      canvas.removeEventListener("mouseup", onMouseUp);
-      canvas.removeEventListener("click", onClick);
-      canvas.removeEventListener("dblclick", onDblClick);
+      canvas.removeEventListener("mousedown", startHandler);
+      canvas.removeEventListener("mousemove", moveHandler);
+      canvas.removeEventListener("mouseup", endHandler);
+      canvas.removeEventListener("touchstart", startHandler);
+      canvas.removeEventListener("touchmove", moveHandler);
+      canvas.removeEventListener("touchend", endHandler);
     };
-  }, [dragging, textX, textY, size, text, toolbarOpen, startEdit]);
+  }, [textX, textY, size, text, toolbarOpen, startEdit]);
 
-  // Export
+  /* ------------------------------------------------- */
+  /* Export */
+  /* ------------------------------------------------- */
   const exportDesign = () => {
     const dataUrl = canvasRef.current?.toDataURL("image/png") || "";
     onDesignReady?.(dataUrl);
   };
 
+  /* ------------------------------------------------- */
+  /* Render */
+  /* ------------------------------------------------- */
   return (
     <div className={styles.canvasSection}>
       <div ref={wrapperRef} style={{ position: "relative", display: "inline-block" }}>
@@ -219,10 +262,11 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
             cursor: dragging ? "grabbing" : "grab",
             border: "1px solid #ddd",
             borderRadius: "10px",
+            touchAction: "none",
           }}
         />
 
-        {/* Inline Editor – NO dangerouslySetInnerHTML */}
+        {/* ----- Inline editor (contenteditable) ----- */}
         {editing && (
           <div
             ref={editDivRef}
@@ -250,11 +294,12 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
               wordBreak: "break-word",
               userSelect: "text",
             }}
+            // **no dangerouslySetInnerHTML** – we fill it in startEdit()
           />
         )}
       </div>
 
-      {/* Font Tabs */}
+      {/* Font tabs */}
       <div className={styles.fontTabs}>
         {FONTS.map((f, i) => (
           <button
@@ -272,6 +317,7 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
       {toolbarOpen && (
         <div className={styles.bottomToolbar}>
           <div className={styles.toolbarGroup}>
+            {/* Size */}
             <div className={styles.toolItem}>
               <span className={styles.icon}>A</span>
               <input
@@ -287,9 +333,16 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
 
             <div className={styles.divider} />
 
+            {/* Colour */}
             <div className={styles.toolItem}>
               <span className={styles.icon}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                  viewBox="0 0 16 16"
+                >
                   <path d="M8 0a.5.5 0 0 1 .47.33L11.09 7H4.91L7.53.33A.5.5 0 0 1 8 0zM4.5 8h7a.5.5 0 0 1 .47.67L9.41 15H6.59L4.03 8.67A.5.5 0 0 1 4.5 8z" />
                 </svg>
               </span>
@@ -303,13 +356,16 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
 
             <div className={styles.divider} />
 
+            {/* Font dropdown */}
             <div className={styles.toolItem}>
-              <span className={styles.icon} style={{ fontSize: "22px" }}>f</span>
+              <span className={styles.icon} style={{ fontSize: "22px" }}>
+                f
+              </span>
               <select
                 value={font.id}
                 onChange={(e) => {
-                  const selected = FONTS.find((f) => f.id === e.target.value);
-                  if (selected) setFont(selected);
+                  const sel = FONTS.find((f) => f.id === e.target.value);
+                  if (sel) setFont(sel);
                 }}
                 className={styles.fontSelect}
               >
@@ -323,24 +379,35 @@ export default function CanvasEditor({ shirtUrl, onDesignReady }) {
 
             <div className={styles.divider} />
 
+            {/* Counter */}
             <div className={styles.toolItem}>
               <span className={styles.label}>{charCount}/40</span>
             </div>
 
             <div className={styles.divider} />
 
+            {/* Hint */}
             <div className={styles.toolItem}>
               <span className={styles.icon}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                  viewBox="0 0 16 16"
+                >
                   <path d="M3 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H3zm10 10H3V4h10v8z" />
                   <path d="M5 5h2v2H5V5zm4 0h2v2H9V5zM5 9h2v2H5V9zm4 9h2v2H9V9z" />
                 </svg>
               </span>
-              <span className={styles.label}>Double-click to edit</span>
+              <span className={styles.label}>Double‑tap to edit</span>
             </div>
           </div>
 
-          <button className={styles.closeButton} onClick={() => setToolbarOpen(false)}>
+          <button
+            className={styles.closeButton}
+            onClick={() => setToolbarOpen(false)}
+          >
             X
           </button>
         </div>

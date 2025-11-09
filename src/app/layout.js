@@ -1,7 +1,6 @@
 import Footer from "@/features/footer/Footer";
 import "./globals.css";
 import Navbar from "@/features/Main/Navbar/Navbar";
-import RecaptchaProvider from "@/features/signup/recaptcha/RecaptchaProvider";
 
 export const metadata = {
   title: "Create Next App",
@@ -18,11 +17,9 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
-        <RecaptchaProvider>
         <Navbar/>
         {children}
         <Footer />
-        </RecaptchaProvider>
         </body>
     </html>
   );
