@@ -8,13 +8,26 @@
   padding-bottom: 1rem;
   width: 240px;
 
+  
+  .basePrice {
+    text-decoration: line-through;
+    color: #888;
+    margin-left: 0.5rem;
+  }
+
+  .discount {
+    color: green;
+    font-weight: 600;
+    margin-left: 0.5rem;
+  }
+
   &:hover {
     transform: translateY(-6px);
   }
 
   h3 {
     font-size: 1rem;
-    font-weight: 600;
+
   }
 
   p {
@@ -59,4 +72,6 @@
   .productImg {
     object-fit: contain;
   }
+
+  
 }

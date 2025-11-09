@@ -50,10 +50,9 @@ const ProductDetails = () => {
 
     try {
       setLoading(true);
-      await axios.post(`${apiUrl}/v1/cart`, payload, {
+      await api.post(`${apiUrl}/v1/cart`, payload, {
         headers: {
           "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_TOKEN}`,
         },
       });
       alert("Added to cart!");

@@ -3,6 +3,7 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import styles from "./wishlist.module.scss";
 import ProductCard from "@/component/ProductCard/ProductCard";
+import api from "@/axiosInstance/axiosInstance";
 
 const WishList = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -10,14 +11,12 @@ const WishList = () => {
 
   const getwishList = async () => {
     try {
-      const res = await axios.get(`${apiUrl}/v2/wishlist`, {
+      const res = await api.get(`${apiUrl}/v2/wishlist`, {
         headers: {
           "x-api-key":
             "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_TOKEN}`,
         },
       });
-      console.log(res, "lllkkjjhhg");
       setWishListData(res?.data?.data);
     } catch (error) {
       console.log(error);

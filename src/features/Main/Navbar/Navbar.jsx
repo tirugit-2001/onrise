@@ -16,18 +16,17 @@ import logo from "@/assessts/light-2x.webp";
 import DynamicModal from "@/component/Modal/Modal";
 import LoginForm from "@/features/signup/LogIn/LoginForm";
 import { useRouter } from "next/navigation";
-import OTPModal from "@/features/signup/OTPModal/OTPModal";
+import Cookies from "js-cookie";
 
 const Navbar = () => {
   const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
-  const [isOtpModalVisible, setIsOtpModalVisible] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const userToken = localStorage.getItem("userToken");
-    setIsLoggedIn(!!userToken);
+    const token = Cookies.get("idToken");
+    setIsLoggedIn(!!token);
   }, []);
 
   const navItems = [
@@ -48,6 +47,7 @@ const Navbar = () => {
 
   const handleContinue = () => {
     setIsLoginModalVisible(false);
+    setIsLoggedIn(true);
   };
 
   return (
@@ -77,25 +77,12 @@ const Navbar = () => {
         </ul>
       </nav>
 
-      {/* Login Modal */}
       <DynamicModal
-        open={isLoginModalVisible}
+        open={isLoginModalVisible && !isLoggedIn}
         onClose={() => setIsLoginModalVisible(false)}
       >
-        <LoginForm 
-        onContinue={handleContinue} 
-        setIsLoginModalVisible={setIsLoginModalVisible}
-        setIsOtpModalVisible={setIsOtpModalVisible}
-        />
+        <LoginForm onContinue={handleContinue} setIsLoginModalVisible={setIsLoginModalVisible} />
       </DynamicModal>
-
-      <DynamicModal
-        open={isOtpModalVisible}
-        onClose={() => setIsOtpModalVisible(false)}
-      >
-        <OTPModal />
-      </DynamicModal>
-
     </>
   );
 };

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import styles from "./cart.module.scss";
 import axios from "axios";
+import api from "@/axiosInstance/axiosInstance";
 
 const Cart = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -36,11 +37,10 @@ const Cart = () => {
 
   const getCartData = async () => {
     try {
-      const res = await axios.get(`${apiUrl}/v1/cart`, {
+      const res = await api.get(`${apiUrl}/v1/cart`, {
         headers: {
           "x-api-key":
             "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_TOKEN}`,
         },
       });
       console.log(res.data.data, "🧾 Cart API Response");
@@ -56,11 +56,10 @@ const Cart = () => {
 
   const handleDelete = async (id) => {
     try {
-      const res = await axios.delete(`${apiUrl}/v1/cart?itemid=${id}`, {
+      const res = await api.delete(`${apiUrl}/v1/cart?itemid=${id}`, {
         headers: {
           "x-api-key":
             "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_TOKEN}`,
         },
       });
     } catch (error) {

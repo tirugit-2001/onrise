@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import styles from "./ProductSection.module.scss";
 import ProductCard from "@/component/ProductCard/ProductCard";
 import axios from "axios";
+import api from "@/axiosInstance/axiosInstance";
 
 const ProductSection = () => {
   const [categoryList, setCategoryList] = useState([]);
@@ -13,14 +14,12 @@ const ProductSection = () => {
 
   const getSubCategoriesList = async () => {
     try {
-      const res = await axios.get(
-        `${apiUrl}/v1/categories/H8SZ4VfsFXa4C9cUeonB/subcategories`,
+      const res = await api.get(
+        `/v1/categories/H8SZ4VfsFXa4C9cUeonB/subcategories`,
         {
           headers: {
             "x-api-key":
               "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-            Authorization:
-             `Bearer ${process.env.NEXT_PUBLIC_TOKEN}`
           },
         }
       );
@@ -35,14 +34,12 @@ const ProductSection = () => {
   // 🟩 Fetch Products
   const getProductList = async () => {
     try {
-      const res = await axios.get(
+      const res = await api.get(
         `${apiUrl}/v2/product/category/H8SZ4VfsFXa4C9cUeonB`,
         {
           headers: {
             "x-api-key":
               "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-            Authorization:
-              `Bearer ${process.env.NEXT_PUBLIC_TOKEN}`
           },
         }
       );

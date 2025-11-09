@@ -5,6 +5,7 @@ import styles from "./LoginForm.module.scss";
 import { auth } from "@/firebase/config";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import OTPModal from "../OTPModal/OTPModal";
+import Cookies from "js-cookie";
 
 const LoginForm = ({ onContinue }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -52,8 +53,25 @@ const LoginForm = ({ onContinue }) => {
     if (!otpValue) return alert("Enter OTP");
 
     try {
+      // Confirm OTP with Firebase
       const result = await window.confirmationResult.confirm(otpValue);
-      console.log("User signed in:", result.user);
+      const user = result.user;
+
+      console.log("User signed in:", user);
+      console.log(user,"djdjdyytt")
+      // Get ID token and refresh token
+      const idToken = await user.getIdToken();
+      console.log(idToken,"kdkdjdjdhyttr")
+      const refreshToken = user.refreshToken;
+
+      // Store tokens in cookies
+      Cookies.set("idToken", idToken);
+      Cookies.set("refreshToken", refreshToken);
+
+      // Optional: store user info
+      Cookies.set("phoneNumber", user.phoneNumber);
+
+      // Continue to next step in your app
       onContinue?.();
     } catch (err) {
       console.error("OTP verification failed:", err);

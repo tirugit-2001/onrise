@@ -5,9 +5,9 @@ import Image from "next/image";
 import styles from "./ProductCard.module.scss";
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import api from "@/axiosInstance/axiosInstance";
 
-const ProductCard = ({ item,getwishList}) => {
+const ProductCard = ({ item, getwishList }) => {
   const [liked, setLiked] = useState(false);
   const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -16,67 +16,62 @@ const ProductCard = ({ item,getwishList}) => {
     router.push(`/product/${item?.id}`);
   };
 
-  useEffect(() => {
-    const fetchWishlistStatus = async () => {
-      try {
-        const res = await axios.get(`${apiUrl}/v2/wishlist/${item.id}/status`, {
-          headers: {
-            "x-api-key":
-              "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_TOKEN}`,
-          },
-        });
-        setLiked(res.data?.data?.isInWishlist || false);
-      } catch (err) {
-        console.error("Error checking wishlist status:", err);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchWishlistStatus = async () => {
+  //     try {
+  //       const res = await api.get(`${apiUrl}/v2/wishlist/${item.id}/status`, {
+  //         headers: {
+  //           "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+  //         },
+  //       });
+  //       setLiked(res.data?.data?.isInWishlist || false);
+  //     } catch (err) {
+  //       console.error("Error checking wishlist status:", err);
+  //     }
+  //   };
 
-    fetchWishlistStatus();
-  }, [item.id]);
+  //   fetchWishlistStatus();
+  // }, [item.id]);
 
   const toggleWishlist = async () => {
     try {
       if (!liked) {
-        // Add to wishlist
-        await axios.post(
+        await api.post(
           `${apiUrl}/v2/wishlist`,
           { productId: item.id },
           {
             headers: {
-              "x-api-key":
-                "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-              Authorization: `Bearer ${process.env.NEXT_PUBLIC_TOKEN}`,
+              "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
             },
           }
         );
       } else {
-        // Remove from wishlist
-        const res = await axios.delete(`${apiUrl}/v2/wishlist/${item.id}`, {
+        const res = await api.delete(`${apiUrl}/v2/wishlist/${item.id}`, {
           headers: {
-            "x-api-key":
-              "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_TOKEN}`,
+            "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
           },
         });
-        if(res?.status === 200){
-          getwishList()
+        if (res?.status === 200) {
+          getwishList();
         }
       }
 
-      // Toggle local state
       setLiked((prev) => !prev);
     } catch (error) {
       console.error("Error toggling wishlist:", error);
     }
   };
 
+  const discountPercentage = Math.round(
+    ((item?.basePrice - item?.discountedPrice) / item?.basePrice) * 100
+  );
+
   return (
     <div className={styles.card} onClick={handleClick}>
       <div className={styles.imageContainer}>
         <Image
-          src={item?.canvasImage}
-          alt={item?.subtitle}
+          src={item?.productImages[0]}
+          alt={item?.name}
           width={300}
           height={300}
           className={styles.productImg}
@@ -84,7 +79,7 @@ const ProductCard = ({ item,getwishList}) => {
         <span
           className={`${styles.favorite} ${liked ? styles.liked : ""}`}
           onClick={(e) => {
-            e.stopPropagation(); // Prevent card click
+            e.stopPropagation();
             toggleWishlist();
           }}
         >
@@ -96,8 +91,13 @@ const ProductCard = ({ item,getwishList}) => {
         </span>
       </div>
 
-      <h3>{item?.subtitle}</h3>
-      <p>₹ {item?.basePrice}</p>
+      <h3>{item?.name}</h3>
+      <p>
+        ₹ {item?.discountedPrice}{" "}
+        <span className={styles.basePrice}>₹ {item?.basePrice}</span>{" "}
+        <span className={styles.discount}>{discountPercentage}% off</span>
+      </p>
+      <p>Incl all taxes</p>
     </div>
   );
 };
