@@ -4,10 +4,13 @@ import React, { useState } from "react";
 import styles from "./LoginForm.module.scss";
 import { auth } from "@/firebase/config";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import OTPModal from "../OTPModal/OTPModal";
 
 const LoginForm = ({ onContinue }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState(Array(6).fill(""));
+  const [error, setError] = useState("");
 
   const setupRecaptcha = () => {
     if (!window.recaptchaVerifier) {
@@ -15,20 +18,17 @@ const LoginForm = ({ onContinue }) => {
         auth,
         "recaptcha-container",
         {
-          size: "invisible", // or "normal"
-          callback: (response) => {
-            console.log("Recaptcha verified:", response);
-          },
+          size: "invisible",
         }
       );
     }
   };
 
-  const handleContinue = async () => {
+  // Send OTP
+  const handleSendOtp = async () => {
     if (!phoneNumber) return alert("Enter phone number");
 
     setupRecaptcha();
-
     const appVerifier = window.recaptchaVerifier;
 
     try {
@@ -39,58 +39,59 @@ const LoginForm = ({ onContinue }) => {
       );
       window.confirmationResult = confirmationResult;
       setOtpSent(true);
+      setError("");
       console.log("OTP sent successfully!");
-    } catch (error) {
-      console.error("Error sending OTP:", error);
-      alert(error.message);
+    } catch (err) {
+      console.error("Error sending OTP:", err);
+      setError(err.message);
     }
   };
 
-  const verifyOTP = async (otp) => {
+  // Verify OTP
+  const handleVerifyOtp = async (otpValue) => {
+    if (!otpValue) return alert("Enter OTP");
+
     try {
-      const result = await window.confirmationResult.confirm(otp);
+      const result = await window.confirmationResult.confirm(otpValue);
       console.log("User signed in:", result.user);
       onContinue?.();
-    } catch (error) {
-      console.error("OTP verification failed:", error);
+    } catch (err) {
+      console.error("OTP verification failed:", err);
+      setError("Invalid OTP. Please try again.");
     }
   };
 
   return (
     <div className={styles.loginForm}>
-      <h2 className={styles.title}>
-        Glad to have you at <span>Print Easy</span>.
-        <br /> Stay tuned for exclusive offers & updates!
-      </h2>
-
-      <p className={styles.subtitle}>Login or Signup</p>
-      <p className={styles.helper}>
-        Use your email or another service to continue, signing up is free!
-      </p>
-
-      <input
-        type="text"
-        placeholder="Enter Mobile Number"
-        className={styles.input}
-        value={phoneNumber}
-        onChange={(e) => setPhoneNumber(e.target.value)}
-      />
-
-      <div id="recaptcha-container"></div>
-
-      <button className={styles.continueBtn} onClick={handleContinue}>
-        Continue
-      </button>
-
-      {otpSent && (
-        <div>
+      {!otpSent ? (
+        <>
+          <h2 className={styles.title}>
+            Welcome! Enter your phone number to continue.
+          </h2>
           <input
             type="text"
-            placeholder="Enter OTP"
-            onChange={(e) => verifyOTP(e.target.value)}
+            placeholder="Enter Mobile Number"
+            className={styles.input}
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
           />
-        </div>
+          <div id="recaptcha-container"></div>
+          <button className={styles.continueBtn} onClick={handleSendOtp}>
+            Send OTP
+          </button>
+        </>
+      ) : (
+        <>
+          <OTPModal
+            phoneNumber={phoneNumber}
+            otp={otp} // pass state down
+            setOtp={setOtp} // pass setter
+            handleVerifyOtp={handleVerifyOtp}
+          />
+        </>
       )}
+
+      {error && <p className={styles.error}>{error}</p>}
     </div>
   );
 };

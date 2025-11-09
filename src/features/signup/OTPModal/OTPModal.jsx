@@ -3,9 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./otp.module.scss";
 
-const OTPModal = ({phoneNumber}) => {
+const OTPModal = ({ phoneNumber, otp, setOtp, handleVerifyOtp }) => {
   const [timer, setTimer] = useState(45);
-  const [otp, setOtp] = useState(Array(6).fill(""));
   const inputRefs = useRef([]);
 
   useEffect(() => {
@@ -36,6 +35,15 @@ const OTPModal = ({phoneNumber}) => {
     }
   };
 
+  const handleSubmit = () => {
+    const otpValue = otp.join("");
+    if (otpValue.length === 6) {
+      handleVerifyOtp(otpValue);
+    } else {
+      alert("Please enter complete OTP");
+    }
+  };
+
   return (
     <div className={styles.otpModal}>
       <h2>OTP Verification</h2>
@@ -54,6 +62,10 @@ const OTPModal = ({phoneNumber}) => {
           />
         ))}
       </div>
+
+      <button className={styles.submitBtn} onClick={handleSubmit}>
+        Verify OTP
+      </button>
 
       <p>
         Didn’t get the OTP? Resend in <strong>{timer}s</strong>

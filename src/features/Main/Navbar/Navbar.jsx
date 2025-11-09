@@ -16,6 +16,7 @@ import logo from "@/assessts/light-2x.webp";
 import DynamicModal from "@/component/Modal/Modal";
 import LoginForm from "@/features/signup/LogIn/LoginForm";
 import { useRouter } from "next/navigation";
+import OTPModal from "@/features/signup/OTPModal/OTPModal";
 
 const Navbar = () => {
   const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
@@ -47,7 +48,6 @@ const Navbar = () => {
 
   const handleContinue = () => {
     setIsLoginModalVisible(false);
-    setTimeout(() => setIsOtpModalVisible(true), 300);
   };
 
   return (
@@ -82,7 +82,18 @@ const Navbar = () => {
         open={isLoginModalVisible}
         onClose={() => setIsLoginModalVisible(false)}
       >
-        <LoginForm onContinue={handleContinue} setIsLoginModalVisible={setIsLoginModalVisible}/>
+        <LoginForm 
+        onContinue={handleContinue} 
+        setIsLoginModalVisible={setIsLoginModalVisible}
+        setIsOtpModalVisible={setIsOtpModalVisible}
+        />
+      </DynamicModal>
+
+      <DynamicModal
+        open={isOtpModalVisible}
+        onClose={() => setIsOtpModalVisible(false)}
+      >
+        <OTPModal />
       </DynamicModal>
 
     </>
