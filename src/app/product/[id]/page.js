@@ -7,6 +7,8 @@ import { nanoid } from "nanoid";
 import { Plus, Minus } from "lucide-react";
 import styles from "./ProductDetails.module.scss";
 import CanvasEditor from "@/component/CanvasEditor/CanvasEditor";
+import api from "@/axiosInstance/axiosInstance";
+import Image from "next/image";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -22,8 +24,11 @@ const ProductDetails = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`${apiUrl}/v2/product/${id}`, {
-          headers: { "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10" },
+        const res = await api.get(`/v2/product/${id}`, {
+          headers: {
+            "x-api-key":
+              "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+          },
         });
         setProduct(res?.data?.data);
       } catch (error) {
@@ -52,7 +57,8 @@ const ProductDetails = () => {
       setLoading(true);
       await api.post(`${apiUrl}/v1/cart`, payload, {
         headers: {
-          "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+          "x-api-key":
+            "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
         },
       });
       alert("Added to cart!");
@@ -67,12 +73,8 @@ const ProductDetails = () => {
 
   return (
     <div className={styles.container}>
-      {/* Canvas Editor */}
-      <CanvasEditor
-        shirtUrl={product.productImages?.[0]}
-        batmanUrl={product.productImages?.[1]}
-        onDesignReady={setDesignPng}
-      />
+      <Image src={product?.canvasImage} alt="product Image" width={500} height={600}/>
+   
 
       {/* Info */}
       <div className={styles.infoSection}>
@@ -82,7 +84,9 @@ const ProductDetails = () => {
         <div className={styles.priceSection}>
           {product.discountedPrice ? (
             <>
-              <p className={styles.discountedPrice}>₹ {product.discountedPrice}</p>
+              <p className={styles.discountedPrice}>
+                ₹ {product.discountedPrice}
+              </p>
               <p className={styles.basePrice}>₹ {product.basePrice}</p>
             </>
           ) : (
@@ -97,7 +101,9 @@ const ProductDetails = () => {
               {product.configuration[0].options.map((s) => (
                 <button
                   key={s.value}
-                  className={`${styles.sizeBtn} ${selectedSize === s.value ? styles.activeSize : ""}`}
+                  className={`${styles.sizeBtn} ${
+                    selectedSize === s.value ? styles.activeSize : ""
+                  }`}
                   onClick={() => setSelectedSize(s.value)}
                 >
                   {s.label}
@@ -107,7 +113,11 @@ const ProductDetails = () => {
           </div>
         )}
 
-        <button className={styles.addToCart} onClick={addToCart} disabled={loading}>
+        <button
+          className={styles.addToCart}
+          onClick={addToCart}
+          disabled={loading}
+        >
           {loading ? "ADDING..." : "ADD TO BAG"}
         </button>
 
@@ -119,13 +129,19 @@ const ProductDetails = () => {
             <div key={sec.title} className={styles.accordionItem}>
               <div
                 className={styles.accordionHeader}
-                onClick={() => setActiveSection(activeSection === sec.title ? null : sec.title)}
+                onClick={() =>
+                  setActiveSection(
+                    activeSection === sec.title ? null : sec.title
+                  )
+                }
               >
                 <h3>{sec.title}</h3>
                 {activeSection === sec.title ? <Minus /> : <Plus />}
               </div>
               <div
-                className={`${styles.accordionContent} ${activeSection === sec.title ? styles.active : ""}`}
+                className={`${styles.accordionContent} ${
+                  activeSection === sec.title ? styles.active : ""
+                }`}
               >
                 <p>{sec.content || "No information available."}</p>
               </div>
