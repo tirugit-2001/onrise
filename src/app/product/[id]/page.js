@@ -71,10 +71,23 @@ const ProductDetails = () => {
 
   if (!product) return <div className={styles.loading}>Loading...</div>;
 
+  const handleDesignChange = (designDataURL) => {
+    setDesignPng(designDataURL);
+  };
+
   return (
     <div className={styles.container}>
-      <Image src={product?.canvasImage} alt="product Image" width={500} height={600}/>
-   
+      {product?.isCustomizable ? (
+        <CanvasEditor product={product} onDesignChange={handleDesignChange} />
+      ) : (
+        <Image
+          src={product.canvasImage}
+          alt="product"
+          width={500}
+          height={600}
+          style={{ borderRadius: "12px" }}
+        />
+      )}
 
       {/* Info */}
       <div className={styles.infoSection}>

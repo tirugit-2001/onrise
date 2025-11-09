@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { Instagram, Facebook, Youtube } from "lucide-react";
 import styles from "./footer.module.scss";
+import logo from "@/assessts/light-2x.webp";
 
 const Footer = () => {
   return (
@@ -11,7 +12,7 @@ const Footer = () => {
       <div className={styles.footerContent}>
         <div className={styles.logoSection}>
           <Image
-            src="/logo.png"
+            src={logo}
             alt="Onrise Logo"
             width={60}
             height={60}
