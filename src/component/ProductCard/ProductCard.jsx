@@ -4,34 +4,37 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import styles from "./ProductCard.module.scss";
 import { Heart } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import api from "@/axiosInstance/axiosInstance";
 
 const ProductCard = ({ item, getwishList }) => {
   const [liked, setLiked] = useState(false);
   const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
+  const pathname = usePathname();
   const handleClick = () => {
     router.push(`/product/${item?.id}`);
   };
 
-  // useEffect(() => {
-  //   const fetchWishlistStatus = async () => {
-  //     try {
-  //       const res = await api.get(`${apiUrl}/v2/wishlist/${item.id}/status`, {
-  //         headers: {
-  //           "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-  //         },
-  //       });
-  //       setLiked(res.data?.data?.isInWishlist || false);
-  //     } catch (err) {
-  //       console.error("Error checking wishlist status:", err);
-  //     }
-  //   };
+  useEffect(() => {
+    if (pathname === "/wishlist") {
+      const fetchWishlistStatus = async () => {
+        try {
+          const res = await api.get(`${apiUrl}/v2/wishlist/${item.id}/status`, {
+            headers: {
+              "x-api-key":
+                "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+            },
+          });
+          setLiked(res.data?.data?.isInWishlist || false);
+        } catch (err) {
+          console.error("Error checking wishlist status:", err);
+        }
+      };
 
-  //   fetchWishlistStatus();
-  // }, [item.id]);
+      fetchWishlistStatus();
+    }
+  }, [item.id, pathname]);
 
   const toggleWishlist = async () => {
     try {

@@ -2,26 +2,30 @@
 import React, { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import styles from "./cart.module.scss";
-import axios from "axios";
 import api from "@/axiosInstance/axiosInstance";
 import NoResult from "@/component/NoResult/NoResult";
 import { useRouter } from "next/navigation";
 import CartRewards from "./CartRewards/CartRewards";
+import DefaultAddress from "./DefaultAddress/DefaultAddress";
+import PriceList from "./PriceList/PriceList";
 
 const Cart = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const [cartItems, setCartItems] = useState([]);
+  const [addressList, setAddressList] = useState([]);
   const router = useRouter();
 
+  // 🧮 Update item quantity
   const handleQuantityChange = (id, newQuantity) => {
     if (newQuantity < 1) return;
-    setCartItems(
-      cartItems.map((item) =>
+    setCartItems((prev) =>
+      prev.map((item) =>
         item.id === id ? { ...item, quantity: newQuantity } : item
       )
     );
   };
 
+  // 💰 Calculate total price
   const calculateTotal = () => {
     return cartItems.reduce((sum, item) => {
       const price =
@@ -38,6 +42,7 @@ const Cart = () => {
   const couponDiscount = 0;
   const grandTotal = bagTotal - couponDiscount;
 
+  // 🛒 Fetch Cart Data
   const getCartData = async () => {
     try {
       const res = await api.get(`${apiUrl}/v1/cart`, {
@@ -53,29 +58,49 @@ const Cart = () => {
     }
   };
 
-  useEffect(() => {
-    getCartData();
-  }, []);
-
+  // 🗑️ Delete Item
   const handleDelete = async (id) => {
     try {
-      const res = await api.delete(`/v1/cart?itemid=${id}`, {
+      await api.delete(`/v1/cart?itemid=${id}`, {
         headers: {
           "x-api-key":
             "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
         },
       });
+      setCartItems((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
       console.log(error);
     }
   };
+
+  // 🏠 Get Address List
+  const getAddressList = async () => {
+    try {
+      const res = await api.get(`/v1/address/all`, {
+        headers: {
+          "x-api-key":
+            "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+        },
+      });
+      setAddressList(res?.data?.data || []);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getCartData();
+    getAddressList();
+  }, []);
 
   return (
     <div className={styles.cartPage}>
       {cartItems?.length > 0 ? (
         <>
           <CartRewards totalAmount={bagTotal} />
+
           <div className={styles.cartContainer}>
+            {/* LEFT: Cart Items */}
             <div className={styles.cartItems}>
               {cartItems.map((item) => (
                 <div key={item.id} className={styles.cartItem}>
@@ -110,9 +135,9 @@ const Cart = () => {
                               )
                             }
                           >
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                              <option key={num} value={num}>
-                                {num}
+                            {[...Array(10).keys()].map((num) => (
+                              <option key={num + 1} value={num + 1}>
+                                {num + 1}
                               </option>
                             ))}
                           </select>
@@ -137,40 +162,21 @@ const Cart = () => {
               ))}
             </div>
 
-            {/* Price Details Section */}
-            <div className={styles.priceDetails}>
-              <div className={styles.priceHeader}>
-                <h2>Price Details</h2>
-              </div>
-
-              <div className={styles.priceContent}>
-                <div className={styles.priceRow}>
-                  <span>Bag Total</span>
-                  <span className={styles.priceValue}>₹{bagTotal}</span>
-                </div>
-
-                <div className={styles.priceRow}>
-                  <span>Shipping</span>
-                  <span className={styles.priceValue}>₹0</span>
-                </div>
-
-                <div className={styles.grandTotalRow}>
-                  <span>Grand Total</span>
-                  <span>₹{grandTotal}</span>
-                </div>
-
-                <button className={styles.payBtn}>PAY ₹ {grandTotal}</button>
-              </div>
+            {/* RIGHT: Address + Price */}
+            <div className={styles.rightSection}>
+              <DefaultAddress
+                addressList={addressList}
+                onChange={() => console.log("Change Address Clicked")}
+              />
+              <PriceList bagTotal={bagTotal} grandTotal={grandTotal} />
             </div>
           </div>
         </>
       ) : (
         <NoResult
-          title={"OOps! Your Cart is Empty"}
-          description={
-            "It seems like your shopping cart is currently empty. Start adding items to your cart to continue shooping and enjoy a seamless checkout experience. Explore our product and find the perfect items for you"
-          }
-          buttonText={"Explore"}
+          title="Oops! Your Cart is Empty"
+          description="It seems like your shopping cart is currently empty. Start adding items to your cart to continue shopping and enjoy a seamless checkout experience. Explore our products and find the perfect items for you."
+          buttonText="Explore"
           onButtonClick={() => router.push("/")}
         />
       )}

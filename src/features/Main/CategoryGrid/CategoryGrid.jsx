@@ -37,9 +37,9 @@ const CategoryGrid = () => {
     <main className={styles.featured_categories}>
       <h3>FEATURED CATEGORIES</h3>
       <section className={styles.gridWrapper}>
-        {categories.map((item, index) => (
+        {categories.map((item) => (
           <div onClick={() => {handleCardClick(item?.id)}}>
-            <CategoryCard key={index} image={item.image} title={item.name} />
+            <CategoryCard key={item.name} image={item.image} title={item.name} />
           </div>
         ))}
       </section>
