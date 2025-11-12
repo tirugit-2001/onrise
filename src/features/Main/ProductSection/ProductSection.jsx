@@ -53,7 +53,6 @@ const ProductSection = () => {
     getProductList();
   }, []);
 
-  // 🟦 Filtered Products based on selected subcategory
   const filteredProducts =
     selectedCategory === "All"
       ? product
@@ -63,7 +62,6 @@ const ProductSection = () => {
     <div className={styles.wrapper}>
       <h2 className={styles.heading}>NEW AND POPULAR</h2>
 
-      {/* 🔹 Filter Buttons */}
       <div className={styles.filters}>
         {categoryList.map((cat) => (
           <button
@@ -78,7 +76,6 @@ const ProductSection = () => {
         ))}
       </div>
 
-      {/* 🔹 Product Cards */}
       <div className={styles.cardGrid}>
         {filteredProducts.length > 0 ? (
           filteredProducts.map((item) => (

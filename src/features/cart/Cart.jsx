@@ -61,7 +61,7 @@ const Cart = () => {
   // 🗑️ Delete Item
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/v1/cart?itemid=${id}`, {
+      await api.delete(`/v1/cart?itemId=${id}`, {
         headers: {
           "x-api-key":
             "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
