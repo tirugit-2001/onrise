@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import axios from "axios";
 import { nanoid } from "nanoid";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, Heart } from "lucide-react";
 import styles from "./ProductDetails.module.scss";
 import CanvasEditor from "@/component/CanvasEditor/CanvasEditor";
 import api from "@/axiosInstance/axiosInstance";
@@ -18,13 +18,13 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
   const [designPng, setDesignPng] = useState("");
-  const [printingImg,setPrintingImg]= useState({
-    textColor:"",
-    fontFamily:"",
-    printText:"",
-    fontSize:""
-  })
-  console.log(product,"jsjshjshytterrewww")
+  const [printingImg, setPrintingImg] = useState({
+    textColor: "",
+    fontFamily: "",
+    printText: "",
+    fontSize: "",
+  });
+
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
@@ -45,66 +45,78 @@ const ProductDetails = () => {
   }, [id, apiUrl]);
 
   const addToCart = async () => {
-  if (product?.configuration?.length > 0 && !selectedSize) {
-    alert("Please select a size.");
-    return;
-  }
+    if (product?.configuration?.length > 0 && !selectedSize) {
+      alert("Please select a size.");
+      return;
+    }
 
-  const payload = {
-    productId: product.id,
-    categoryId: product.categoryId,
-    name: product.name,
-    sku: product.sku,
-    quantity,
-    basePrice: product.basePrice,
-    discountPrice: product.discountedPrice || product.basePrice,
-    totalPrice:
-      (product.discountedPrice || product.basePrice) * quantity,
-    isCustomizable: product.isCustomizable,
-    productImageUrl: product.productImages?.[0] || product.canvasImage || "",
-    dimensions: {
-      length: product.dimension?.length || 0,
-      width: product.dimension?.width || 0,
-      height: product.dimension?.height || 0,
-      weight: product.dimension?.weight || 0,
-    },
-    options: [
-      {
-        id: "",
-        label: "Size",
-        value: "size",
-        options: product.configuration?.[0]?.options
-          ?.filter((opt) => opt.value === selectedSize)
-          .map((opt) => ({
-            id: "",
-            label: opt.label,
-            value: opt.value,
-            options: opt.options || [],
-          })) || [],
+    const payload = {
+      productId: product.id,
+      categoryId: product.categoryId,
+      name: product.name,
+      sku: product.sku,
+      quantity,
+      basePrice: product.basePrice,
+      discountPrice: product.discountedPrice || product.basePrice,
+      totalPrice: (product.discountedPrice || product.basePrice) * quantity,
+      isCustomizable: product.isCustomizable,
+      productImageUrl: product.productImages?.[0] || product.canvasImage || "",
+      dimensions: {
+        length: product.dimension?.length || 0,
+        width: product.dimension?.width || 0,
+        height: product.dimension?.height || 0,
+        weight: product.dimension?.weight || 0,
       },
-    ],
-    illustrationImage:product?.illustrationImage,
-    printingImgText:printingImg
+      options: [
+        {
+          id: "",
+          label: "Size",
+          value: "size",
+          options:
+            product.configuration?.[0]?.options
+              ?.filter((opt) => opt.value === selectedSize)
+              .map((opt) => ({
+                id: "",
+                label: opt.label,
+                value: opt.value,
+                options: opt.options || [],
+              })) || [],
+        },
+      ],
+      illustrationImage: product?.illustrationImage,
+      printingImgText: printingImg,
+    };
+
+    try {
+      setLoading(true);
+      await api.post(`${apiUrl}/v1/cart`, payload, {
+        headers: {
+          "x-api-key":
+            "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+        },
+      });
+      alert("Added to cart!");
+    } catch (err) {
+      console.error("❌ Error adding to cart:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  console.log("🛒 Cart Payload:", payload);
-
-  try {
-    setLoading(true);
-    await api.post(`${apiUrl}/v1/cart`, payload, {
-      headers: {
-        "x-api-key":
-          "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-      },
-    });
-    alert("Added to cart!");
-  } catch (err) {
-    console.error("❌ Error adding to cart:", err);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  const addToWishlist = async () => {
+    try {
+      await api.post(
+        `${apiUrl}/v2/wishlist`,
+        { productId: product.id },
+        {
+          headers: {
+            "x-api-key":
+              "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+          },
+        }
+      );
+    } catch (error) {}
+  };
 
   if (!product) return <div className={styles.loading}>Loading...</div>;
 
@@ -115,18 +127,22 @@ const ProductDetails = () => {
   return (
     <div className={styles.container}>
       {product?.isCustomizable ? (
-        <CanvasEditor product={product} onDesignChange={handleDesignChange} setPrintingImg={setPrintingImg}/>
+        <CanvasEditor
+          product={product}
+          onDesignChange={handleDesignChange}
+          setPrintingImg={setPrintingImg}
+        />
       ) : (
         <Image
           src={product.canvasImage}
           alt="product"
           width={500}
           height={600}
-          style={{ borderRadius: "12px" }}
+          className={styles.mainImage}
         />
       )}
 
-      {/* Info */}
+      {/* Info Section */}
       <div className={styles.infoSection}>
         <h1>{product.name}</h1>
         <p className={styles.subtitle}>{product.subtitle}</p>
@@ -163,14 +179,23 @@ const ProductDetails = () => {
           </div>
         )}
 
-        <button
-          className={styles.addToCart}
-          onClick={addToCart}
-          disabled={loading}
-        >
-          {loading ? "ADDING..." : "ADD TO BAG"}
-        </button>
+        {/* Buttons */}
+        <div className={styles.buttonsWrapper}>
+          <button
+            className={styles.addToCart}
+            onClick={addToCart}
+            disabled={loading}
+          >
+            {loading ? "ADDING..." : "ADD TO BAG"}
+          </button>
 
+          <button className={styles.addToWishlist} onClick={addToWishlist}>
+            <Heart size={18} style={{ marginRight: "6px" }} />
+            WISHLIST
+          </button>
+        </div>
+
+        {/* Accordion Section */}
         <div className={styles.accordion}>
           {[
             { title: "DETAILS", content: product.description },
