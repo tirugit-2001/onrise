@@ -126,7 +126,7 @@ const CanvasEditor = ({ product, onDesignChange, setPrintingImg }) => {
 
     canvas.getObjects().forEach((obj) => {
       obj.scaleX *= scaleX;
-      obj.scaleY *= scaleY;
+      obj.scaleY *= scaleY;s
       obj.left *= scaleX;
       obj.top *= scaleY;
       obj.setCoords();
