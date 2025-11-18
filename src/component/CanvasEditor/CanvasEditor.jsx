@@ -66,36 +66,34 @@ export default function CanvasEditor({ product }) {
           () => {
             canvas.renderAll();
 
-            // Load illustration inside SAFE area
+            // Load illustration image (locked, not draggable)
             if (illustrationURL) {
               window.fabric.Image.fromURL(
                 illustrationURL,
                 (illuImg) => {
                   if (!illuImg) return console.error("Illustration failed");
 
-                  // Fit illustration inside SAFE box
-                  const scaleX = SAFE.width / illuImg.width;
-                  const scaleY = SAFE.height / illuImg.height;
+                  // Scale illustration slightly bigger than SAFE area
+                  const scaleX = SAFE.width / illuImg.width * 1.2; // 20% bigger
+                  const scaleY = SAFE.height / illuImg.height * 1.2;
                   const scale = Math.min(scaleX, scaleY);
                   illuImg.scale(scale);
 
                   illuImg.set({
                     left: SAFE.left + (SAFE.width - illuImg.width * scale) / 2,
                     top: SAFE.top + (SAFE.height - illuImg.height * scale) / 2,
-                    selectable: true,
-                    hasBorders: true,
-                    hasControls: true,
-                    lockRotation: true
+                    selectable: false, // not draggable or selectable
+                    evented: false // ignore mouse events
                   });
 
                   canvas.add(illuImg);
                   canvas.renderAll();
-                  addWrappedText(canvas);
+                  addTextBelowIllustration(canvas, illuImg);
                 },
                 { crossOrigin: "anonymous" }
               );
             } else {
-              addWrappedText(canvas);
+              addTextBelowIllustration(canvas, null);
             }
           },
           { originX: "left", originY: "top" }
@@ -105,12 +103,15 @@ export default function CanvasEditor({ product }) {
     );
   };
 
-  const addWrappedText = (canvas) => {
+  const addTextBelowIllustration = (canvas, illustration) => {
+    const topPosition = illustration
+      ? illustration.top + illustration.height * illustration.scaleY + 10
+      : SAFE.top;
+
     const text = new window.fabric.Textbox("Enter your text", {
       left: SAFE.left,
-      top: SAFE.top,
+      top: topPosition,
       width: SAFE.width,
-      height: SAFE.height,
       fontSize: 26,
       fill: "black",
       editable: true,
@@ -118,14 +119,11 @@ export default function CanvasEditor({ product }) {
       splitByGrapheme: true
     });
 
-    // Restrict text inside SAFE area
+    // Restrict text inside SAFE width
     text.on("moving", () => {
       if (text.left < SAFE.left) text.left = SAFE.left;
-      if (text.top < SAFE.top) text.top = SAFE.top;
       if (text.left + text.width > SAFE.left + SAFE.width)
         text.left = SAFE.left + SAFE.width - text.width;
-      if (text.top + text.height > SAFE.top + SAFE.height)
-        text.top = SAFE.top + SAFE.height - text.height;
     });
 
     canvas.add(text);
