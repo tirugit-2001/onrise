@@ -8,6 +8,30 @@
 .canvas {
   border: 1px solid #ddd;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  @media screen and (max-width: 708px) {
+    width: 80% !important;
+    height: 80% !important;
+    margin: 20px auto;
+    position: relative;
+    right: 20px !important;
+    left: 20px !important;
+  }
+  @media screen and (max-width: 490px) {
+    width: 70% !important;
+  }
+  @media screen and (max-width: 440px) {
+    width: 60% !important;
+    height: 60% !important;
+  }
+  @media screen and (max-width: 420px) {
+    width: 55% !important;
+  }
+  @media screen and (max-width: 330px) {
+    width: 50% !important;
+  }
+  @media screen and (max-width: 310px) {
+    width: 48% !important;
+  }
 }
 
 // ——— Floating Toolbar ———
@@ -24,6 +48,9 @@
   z-index: 1000;
   animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
 
+  @media screen and (max-width: 330px) {
+    width: 95%;
+  }
   @keyframes slideUp {
     from {
       opacity: 0;
@@ -48,9 +75,12 @@
   background: none;
   border: none;
   cursor: pointer;
+
   transition: all 0.2s;
   color: #666;
-
+  @media screen and (max-width: 330px) {
+    padding: 10px 14px;
+  }
   &.active {
     color: #007aff;
     background: #f0f7ff;
@@ -78,7 +108,9 @@
   background: none;
   border: none;
   cursor: pointer;
-
+  @media screen and (max-width: 330px) {
+    padding: 10px 14px;
+  }
   &:hover {
     color: #333;
   }
