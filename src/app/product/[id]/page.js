@@ -11,6 +11,8 @@ import "react-toastify/dist/ReactToastify.css";
 import styles from "./ProductDetails.module.scss";
 import CanvasEditor from "@/component/CanvasEditor/CanvasEditor";
 import api from "@/axiosInstance/axiosInstance";
+import AddToBagLoader from "@/component/AddToBagLoader/AddToBagLoader";
+import DynamicModal from "@/component/Modal/Modal";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -26,6 +28,7 @@ const ProductDetails = () => {
     printText: "",
     fontSize: "",
   });
+  const [loader,setLoader]= useState(false)
 
   console.log(product,"jjshshsbvvvc")
 
@@ -96,6 +99,7 @@ const ProductDetails = () => {
     };
 
     try {
+      setLoader(true)
       setLoading(true);
       const res = await api.post(`${apiUrl}/v1/cart`, payload, {
         headers: {
@@ -109,6 +113,7 @@ const ProductDetails = () => {
       toast.error(err?.response?.data?.message || "Failed to add to bag");
     } finally {
       setLoading(false);
+      setLoader(false)
     }
   };
 
@@ -239,6 +244,13 @@ const ProductDetails = () => {
           ))}
         </div>
       </div>
+
+      <DynamicModal
+        open={loader}
+        onClose={() => setLoader(false)}
+      >
+        <AddToBagLoader/>
+      </DynamicModal>
     </div>
   );
 };
