@@ -89,8 +89,8 @@ export default function CanvasEditor({ product }) {
                 const scaleY = SAFE.height / illuImg.height * 1.2;
                 const scale = Math.min(scaleX, scaleY);
                 illuImg.set({
-                  left: SAFE.left + (SAFE.width - illuImg.width * scale) / 2,
-                  top: SAFE.top + (SAFE.height - illuImg.height * scale) / 2,
+                  left: SAFE.left + (SAFE.width - illuImg.width * scale) / 2 + 30,
+                  top: SAFE.top + (SAFE.height - illuImg.height * scale) / 2 + 40,
                   scaleX: scale,
                   scaleY: scale,
                   selectable: false,
@@ -116,7 +116,7 @@ export default function CanvasEditor({ product }) {
       : SAFE.top + SAFE.height / 2 - selectedSize / 2;
 
     const text = new window.fabric.Textbox("YOUR TEXT HERE", {
-      left: SAFE.left,
+      left: SAFE.left + 30,
       top: topPos,
       width: SAFE.width,
       fontSize: selectedSize,

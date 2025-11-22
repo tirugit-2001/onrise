@@ -208,9 +208,9 @@
   left: 50%;
   bottom: 32px;
   transform: translateX(-50%);
-  background: #007aff;
+  background: #ff6b00;
   color: white;
-  padding: 16px 32px;
+  padding: 10px 32px;
   border-radius: 50px;
   border: none;
   font-size: 16px;
@@ -221,7 +221,7 @@
   transition: all 0.2s;
 
   &:hover {
-    background: #0060df;
+    background: #de620a;
     transform: translateX(-50%) translateY(-2px);
     box-shadow: 0 15px 30px rgba(0, 122, 255, 0.4);
   }
