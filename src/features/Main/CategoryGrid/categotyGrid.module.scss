@@ -52,6 +52,14 @@
 
   /* ---------- MOBILE VIEW (Force 3 columns) ---------- */
   @media (max-width: 768px) {
+    .featured_categories{
+      margin-top: 1rem !important;
+
+      h3{
+        margin-top:0 I !important;
+      }
+    }
+
     .gridWrapper {
       grid-template-columns: repeat(3, 1fr); // Always 3
       gap: 0.8rem; // Reduced gap
@@ -64,6 +72,14 @@
   }
 
   @media (max-width: 480px) {
+    .featured_categories{
+      margin-top: 1rem !important;
+
+      h3{
+        margin-top:0 I !important;
+      }
+    }
+    
     .gridWrapper {
       grid-template-columns: repeat(3, 1fr); // Still 3 columns
       gap: 0.5rem;
