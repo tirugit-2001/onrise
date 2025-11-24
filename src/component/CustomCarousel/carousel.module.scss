@@ -55,6 +55,10 @@
     height: 35rem;
   }
 
+  .banner_item {
+  padding: 0;
+}
+
   :global(.slick-dots li button:before) {
     color: #ff7b00; // all dots orange
   }
