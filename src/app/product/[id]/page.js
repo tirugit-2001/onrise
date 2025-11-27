@@ -178,23 +178,18 @@ if (loading && !product) {
       )}
 
       <div className={styles.infoSection}>
-        <h1>{product?.name}</h1>
-        <p className={styles.subtitle}>{product?.subtitle}</p>
+        
+        {/* <p className={styles.subtitle}>{product?.subtitle}</p> */}
 
         <div className={styles.priceSection}>
-          {product?.discountedPrice ? (
-            <>
+           <h1>{product?.name}</h1>
               <p className={styles.discountedPrice}>₹ {product?.discountedPrice}</p>
-              <p className={styles.basePrice}>₹ {product?.basePrice}</p>
-            </>
-          ) : (
-            <p className={styles.price}>₹ {product?.basePrice}</p>
-          )}
+            
         </div>
 
         {product?.configuration?.[0]?.options?.length > 0 && (
           <div className={styles.sizes}>
-            <h4>Sizes</h4>
+            <h4>SELECT SIZE</h4>
             <div className={styles.sizeOptions}>
               {product?.configuration[0].options.map((s) => (
                 <button
@@ -222,6 +217,34 @@ if (loading && !product) {
           </button> */}
         </div>
       </div>
+
+       <div className={styles.accordion}>
+          {[
+            { title: "DETAILS", content: product.description },
+            { title: "CARE", content: product.care },
+          ].map((sec) => (
+            <div key={sec.title} className={styles.accordionItem}>
+              <div
+                className={styles.accordionHeader}
+                onClick={() =>
+                  setActiveSection(
+                    activeSection === sec.title ? null : sec.title
+                  )
+                }
+              >
+                <h3>{sec.title}</h3>
+                {activeSection === sec.title ? <Minus /> : <Plus />}
+              </div>
+              <div
+                className={`${styles.accordionContent} ${
+                  activeSection === sec.title ? styles.active : ""
+                }`}
+              >
+                <p>{sec.content || "No information available."}</p>
+              </div>
+            </div>
+          ))}
+        </div>
 
       <DynamicModal open={loader} onClose={() => setLoader(false)}>
         <AddToBagLoader />
