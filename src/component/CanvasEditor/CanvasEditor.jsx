@@ -137,8 +137,8 @@ export default function CanvasEditor({ product, setPrintingImg }) {
       shirtUrl,
       (shirtImg) => {
         if (!shirtImg.width) return;
-        const scale = canvas.width / shirtImg.width;
-        shirtImg.set({ scaleX: scale, scaleY: scale, top: 0, left: 0 });
+        const scale = (canvas.width / shirtImg.width) *  0.80;
+        shirtImg.set({ scaleX: scale, scaleY: scale, top: 100, left: 50 });
         canvas.setBackgroundImage(shirtImg, () => {
           canvas.renderAll();
           if (illustrationUrl) {
@@ -146,13 +146,13 @@ export default function CanvasEditor({ product, setPrintingImg }) {
               illustrationUrl,
               (illuImg) => {
                 if (!illuImg.width) return;
-                const scaleX = (SAFE.width / illuImg.width) * 0.5;
-                const scaleY = (SAFE.height / illuImg.height) * 0.5;
+                const scaleX = (SAFE.width / illuImg.width) * 1.2;
+                const scaleY = (SAFE.height / illuImg.height) * 1.2;
                 const scale = Math.min(scaleX, scaleY);
                 illuImg.set({
                   left:
-                    SAFE.left + (SAFE.width - illuImg.width * scale) / 2 + 30,
-                  top: SAFE.top + (SAFE.height - illuImg.height * scale) / 2,
+                    SAFE.left + (SAFE.width - illuImg.width * scale) / 2 + 20,
+                  top: SAFE.top + (SAFE.height - illuImg.height * scale) / 4 + 30,
                   scaleX: scale,
                   scaleY: scale,
                   selectable: false,
@@ -192,7 +192,7 @@ export default function CanvasEditor({ product, setPrintingImg }) {
     const text = new window.fabric.Textbox(
       product?.presetText || "YOUR TEXT HERE",
       {
-        left: SAFE.left + 30,
+        left: SAFE.left + 20,
         top: topPos,
         width: SAFE.width,
         fontSize: defaultFontSize,
