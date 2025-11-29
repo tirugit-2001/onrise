@@ -138,19 +138,8 @@ export default function CanvasEditor({ product, setPrintingImg }) {
       shirtUrl,
       (shirtImg) => {
         if (!shirtImg.width) return;
-
-        const isMobileNow = window.innerWidth < 450;
-
-        const scale = isMobileNow
-          ? (canvas.width / shirtImg.width) * 0.85
-          : (canvas.width / shirtImg.width) * 1.0;
-        shirtImg.set({
-          scaleX: scale,
-          scaleY: scale,
-          top: isMobileNow ? 100 : 0,
-          left: isMobileNow ? 50 : 0,
-        });
-
+        const scale = (canvas.width / shirtImg.width) * 0.68;
+        shirtImg.set({ scaleX: scale, scaleY: scale, top: 100, left: 100});
         canvas.setBackgroundImage(shirtImg, () => {
           canvas.renderAll();
           if (illustrationUrl) {
@@ -158,14 +147,13 @@ export default function CanvasEditor({ product, setPrintingImg }) {
               illustrationUrl,
               (illuImg) => {
                 if (!illuImg.width) return;
-                const scaleX = (SAFE.width / illuImg.width) * 0.85;
+                const scaleX = (SAFE.width / illuImg.width) * 1.2;
                 const scaleY = (SAFE.height / illuImg.height) * 1.2;
                 const scale = Math.min(scaleX, scaleY);
                 illuImg.set({
                   left:
-                    SAFE.left + (SAFE.width - illuImg.width * scale) / 2 + 20,
-                  top:
-                    SAFE.top + (SAFE.height - illuImg.height * scale) / 4 + 30,
+                    SAFE.left + (SAFE.width - illuImg.width * scale) / 2 + 40,
+                  top: SAFE.top + (SAFE.height - illuImg.height * scale) / 2 ,
                   scaleX: scale,
                   scaleY: scale,
                   selectable: false,
@@ -226,8 +214,8 @@ export default function CanvasEditor({ product, setPrintingImg }) {
     const text = new window.fabric.Textbox(
       product?.presetText || "YOUR TEXT HERE",
       {
-        left: SAFE.left + 20,
-        top: topPos,
+        left: SAFE.left + 33,
+        top: topPos - 20,
         width: SAFE.width,
         fontSize: defaultFontSize,
         fontFamily: defaultFontFamily,
