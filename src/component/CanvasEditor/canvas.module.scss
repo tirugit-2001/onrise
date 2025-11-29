@@ -173,6 +173,7 @@
   color: #666;
   font-weight: 600;
   letter-spacing: 0.5px;
+  white-space: noWrap;
 }
 
 .closeToolbarBtn {
@@ -201,7 +202,7 @@
 // ──────────────────────────────
 .optionsPanel {
   position: absolute;
-  bottom: 92px;
+  bottom: 75px;
   left: 50%;
   background-color: #f3d4a7;
   transform: translateX(-50%);

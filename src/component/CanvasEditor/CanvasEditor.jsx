@@ -158,7 +158,7 @@ export default function CanvasEditor({ product, setPrintingImg }) {
               illustrationUrl,
               (illuImg) => {
                 if (!illuImg.width) return;
-                const scaleX = (SAFE.width / illuImg.width) * 1.2;
+                const scaleX = (SAFE.width / illuImg.width) * 0.85;
                 const scaleY = (SAFE.height / illuImg.height) * 1.2;
                 const scale = Math.min(scaleX, scaleY);
                 illuImg.set({
