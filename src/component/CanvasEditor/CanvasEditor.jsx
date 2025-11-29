@@ -61,7 +61,7 @@ export default function CanvasEditor({
     fontMap[product?.fontFamily] || product?.fontFamily || selectedFont;
   const defaultFontColor = product?.fontColor || selectedColor;
 
-  const SAFE = { left: 140, top: 260, width: 260, height: 180 };
+  const SAFE = { left: 170, top: 260, width: 220, height: 180 };
 
   const getRealImageUrl = (img) => {
     if (!img) return null;
@@ -174,7 +174,7 @@ export default function CanvasEditor({
                 const scale = Math.min(scaleX, scaleY);
                 illuImg.set({
                   left:
-                    SAFE.left + (SAFE.width - illuImg.width * scale) / 2 + 40,
+                    SAFE.left + (SAFE.width - illuImg.width * scale) / 2 + 30,
                   top: SAFE.top + (SAFE.height - illuImg.height * scale) / 2,
                   scaleX: scale,
                   scaleY: scale,
@@ -238,7 +238,7 @@ export default function CanvasEditor({
       {
         left: SAFE.left + 33,
         top: topPos - 10,
-        width: SAFE.width,
+        width: SAFE.width - 10,
         fontSize: defaultFontSize,
         fontFamily: defaultFontFamily,
         fill: defaultFontColor,
