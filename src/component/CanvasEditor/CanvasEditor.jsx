@@ -10,13 +10,14 @@ export default function CanvasEditor({ product, setPrintingImg }) {
   const fabricCanvasRef = useRef(null);
   const activeTextRef = useRef(null);
   const scriptRef = useRef(null);
-
+  const [isMobile, setIsMobile] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedFont, setSelectedFont] = useState("Arial");
   const [selectedColor, setSelectedColor] = useState("#000000");
   const [selectedSize, setSelectedSize] = useState(28);
   const [activeTab, setActiveTab] = useState("font");
-
+  console.log(isMobile);
+  console.log(window.innerWidth, "window.innerWidth");
   const loadFont = async (fontName) => {
     if (!fontName) return;
 
@@ -137,8 +138,19 @@ export default function CanvasEditor({ product, setPrintingImg }) {
       shirtUrl,
       (shirtImg) => {
         if (!shirtImg.width) return;
-        const scale = (canvas.width / shirtImg.width) *  0.80;
-        shirtImg.set({ scaleX: scale, scaleY: scale, top: 100, left: 50 });
+
+        const isMobileNow = window.innerWidth < 450;
+
+        const scale = isMobileNow
+          ? (canvas.width / shirtImg.width) * 0.85
+          : (canvas.width / shirtImg.width) * 1.0;
+        shirtImg.set({
+          scaleX: scale,
+          scaleY: scale,
+          top: isMobileNow ? 100 : 0,
+          left: isMobileNow ? 50 : 0,
+        });
+
         canvas.setBackgroundImage(shirtImg, () => {
           canvas.renderAll();
           if (illustrationUrl) {
@@ -152,7 +164,8 @@ export default function CanvasEditor({ product, setPrintingImg }) {
                 illuImg.set({
                   left:
                     SAFE.left + (SAFE.width - illuImg.width * scale) / 2 + 20,
-                  top: SAFE.top + (SAFE.height - illuImg.height * scale) / 4 + 30,
+                  top:
+                    SAFE.top + (SAFE.height - illuImg.height * scale) / 4 + 30,
                   scaleX: scale,
                   scaleY: scale,
                   selectable: false,
@@ -173,10 +186,31 @@ export default function CanvasEditor({ product, setPrintingImg }) {
   };
 
   useEffect(() => {
-  Object.values(fontMap).forEach(font => {
-    document.fonts.load(`16px ${font}`);
-  });
-}, []);
+    Object.values(fontMap).forEach((font) => {
+      document.fonts.load(`16px ${font}`);
+    });
+  }, []);
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product?.title || "Check this out!",
+          text: "Look at this product:",
+          url: shareUrl,
+        });
+      } catch (error) {
+        console.log("Share cancelled", error);
+      }
+    } else {
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(shareUrl)}`,
+        "_blank"
+      );
+    }
+  };
 
   const addTextBelowIllustration = async (canvas, illustration) => {
     const topPos = illustration
@@ -325,7 +359,7 @@ export default function CanvasEditor({ product, setPrintingImg }) {
           <button className={styles.mobileIcon} onClick={() => {}}>
             <Heart size={20} />
           </button>
-          <button className={styles.mobileIcon} onClick={() => {}}>
+          <button className={styles.mobileIcon} onClick={handleShare}>
             <Share2 size={20} />
           </button>
         </div>
@@ -390,19 +424,18 @@ export default function CanvasEditor({ product, setPrintingImg }) {
                   const isActive = selectedFont === mapped;
                   return (
                     <>
-                    <button
-                      key={fontName}
-                      onClick={() => onFontSelect(fontName)}
-                      className={`${styles.fontOption} ${
-                        isActive ? styles.active : ""
-                      }`}
-                      style={{ fontFamily: `'${mapped}', cursive` }}
-                    >
-                      {fontName}
-                     
-                    </button>
-                     <div style={{border:"1px solid #b3a99b"}}></div>
-                     </>
+                      <button
+                        key={fontName}
+                        onClick={() => onFontSelect(fontName)}
+                        className={`${styles.fontOption} ${
+                          isActive ? styles.active : ""
+                        }`}
+                        style={{ fontFamily: `'${mapped}', cursive` }}
+                      >
+                        {fontName}
+                      </button>
+                      <div style={{ border: "1px solid #b3a99b" }}></div>
+                    </>
                   );
                 })}
               </div>
