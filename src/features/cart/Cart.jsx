@@ -18,11 +18,11 @@ const Cart = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const [cartItems, setCartItems] = useState([]);
   const [addressList, setAddressList] = useState([]);
-  const [offerData,setOfferData] = useState([])
+  const [offerData, setOfferData] = useState([]);
   const router = useRouter();
   const accessToken = Cookies.get("idToken");
 
-  console.log(offerData,"sbbsiieiexxxx")
+  console.log(offerData, "sbbsiieiexxxx");
 
   useEffect(() => {
     db.cart.toArray().then(setCartItems);
@@ -39,9 +39,7 @@ const Cart = () => {
     );
   };
 
-    
-
-   const getOfferData = async () => {
+  const getOfferData = async () => {
     try {
       const res = await api.get(`/v2/giftreward`, {
         headers: {
@@ -57,8 +55,8 @@ const Cart = () => {
   };
 
   useEffect(() => {
-    getOfferData()
-  },[])
+    getOfferData();
+  }, []);
 
   const calculateTotal = () => {
     return cartItems.reduce((sum, item) => {
@@ -314,8 +312,11 @@ const Cart = () => {
                         MOVE TO WISHLIST
                       </button>
                       <span className={styles.itemPrice}>
-                        ₹
-                        {item.discountPrice}
+                        <span className={styles.strikeValue}>
+                          {" "}
+                          ₹{item?.basePrice}
+                        </span>{" "}
+                        <span>₹{item?.discountPrice}</span>
                       </span>
                     </div>
                   </div>
@@ -326,7 +327,7 @@ const Cart = () => {
             <div className={styles.rightSection}>
               <DefaultAddress
                 addressList={addressList}
-                onChange={() => router.push('/address')}
+                onChange={() => router.push("/address")}
               />
               <PriceList
                 bagTotal={bagTotal}
