@@ -303,7 +303,7 @@ const ProductDetails = () => {
           ))}
         </div>
 
-        <section>
+        <section style={{width:"100%",overflowX:"auto"}}>
           <Suggested relatedData={relatedData} />
         </section>
 

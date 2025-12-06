@@ -121,7 +121,6 @@ const Cart = () => {
       );
 
       toast.success("Item removed from cart");
-      toast.success("Item removed from cart");
     } catch (err) {
       console.error("Error deleting cart item:", err);
       toast.error("Failed to remove item");
