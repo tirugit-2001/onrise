@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import bag from "../../assessts/bag.svg";
 import share from "../../assessts/share.svg";
 import Image from "next/image";
+import { useCart } from "@/context/CartContext";
 
 export default function CanvasEditor({
   product,
@@ -25,7 +26,9 @@ export default function CanvasEditor({
   const [activeTab, setActiveTab] = useState("font");
   const [isWishlisted, setIsWishlisted] = useState(product?.isInWishlist);
   const [fonts, setFonts] = useState([]);
+  const [canvasbackground,setCanvasBackground] = useState("")
   const router = useRouter();
+  const { cartCount } = useCart();
   const count = localStorage.getItem("count");
 
   const loadFont = async (fontName) => {
@@ -34,10 +37,7 @@ export default function CanvasEditor({
     // Use fontMap to match correct system name if needed
     const fileName = fontMap[fontName] || fontName;
 
-    const font = new FontFace(
-      fileName,
-      `url(/fonts/${fileName}.ttf)`
-    );
+    const font = new FontFace(fileName, `url(/fonts/${fileName}.ttf)`);
 
     try {
       await font.load();
@@ -114,11 +114,11 @@ export default function CanvasEditor({
     const canvas = new window.fabric.Canvas(canvasRef.current, {
       width: 600,
       height: 700,
-      backgroundColor: "#f0f0f0",
+      backgroundColor: "#fff",
       preserveObjectStacking: true,
       selection: true,
     });
-
+    canvas.setBackgroundColor(canvasbackground, canvas.renderAll.bind(canvas));
     fabricCanvasRef.current = canvas;
 
     const handleSelection = (e) => {
@@ -155,32 +155,47 @@ export default function CanvasEditor({
   };
 
   const loadProductImages = (canvas) => {
-    const shirtUrl = getRealImageUrl(product?.canvasImage);
+  const shirtUrl = getRealImageUrl(product?.canvasImage);
 
-    if (!shirtUrl) return;
+  if (!shirtUrl) return;
 
-    window.fabric.Image.fromURL(
-      shirtUrl,
-      (shirtImg) => {
-        if (!shirtImg.width) return;
+  window.fabric.Image.fromURL(
+    shirtUrl,
+    (shirtImg) => {
+      if (!shirtImg.width) return;
 
-        const scale = (canvas.width / shirtImg.width) * 0.68;
+      const scale = (canvas.width / shirtImg.width) * 0.68;
 
-        shirtImg.set({
-          scaleX: scale,
-          scaleY: scale,
-          top: 100,
-          left: 100,
-        });
+      shirtImg.set({
+        scaleX: scale,
+        scaleY: scale,
+        top: 125,
+        left: 100,
+      });
 
-        canvas.setBackgroundImage(shirtImg, () => {
-          canvas.renderAll();
-          addTextBelowIllustration(canvas, null);
-        });
-      },
-      { crossOrigin: "anonymous" }
-    );
-  };
+      // Set as Fabric background
+      canvas.setBackgroundImage(shirtImg, () => {
+        canvas.renderAll();
+        addTextBelowIllustration(canvas, null);
+
+        // Extract background color
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = shirtImg.width;
+        tempCanvas.height = shirtImg.height;
+        const ctx = tempCanvas.getContext("2d");
+        ctx.drawImage(shirtImg._element, 0, 0);
+
+        // Get pixel data of top-left corner (0,0)
+        const pixelData = ctx.getImageData(0, 0, 1, 1).data;
+        const bgColor = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
+        setCanvasBackground(bgColor)
+        console.log("Background color:", typeof bgColor);
+      });
+    },
+    { crossOrigin: "anonymous" }
+  );
+};
+
 
   useEffect(() => {
     Object.values(fontMap).forEach((font) => {
@@ -212,7 +227,7 @@ export default function CanvasEditor({
   const addTextBelowIllustration = async (canvas, illustration) => {
     const topPos = illustration
       ? illustration.top + illustration.getScaledHeight() + 10
-      : (SAFE.top + SAFE.height / 2 - selectedSize / 2) + 65;
+      : SAFE.top + SAFE.height / 2 - selectedSize / 2 + 110;
 
     const fontName =
       fontMap[product?.fontFamily] || product?.fontFamily || selectedFont;
@@ -289,18 +304,32 @@ export default function CanvasEditor({
   const startTextEditing = () => {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
-    const textObj = canvas.getObjects().find((o) => o.type === "textbox");
+
+    const textObj =
+      activeTextRef.current ||
+      canvas.getObjects().find((o) => o.type === "textbox");
+
     if (!textObj) return;
 
     canvas.setActiveObject(textObj);
-    textObj.enterEditing();
-    canvas.requestRenderAll();
 
-    activeTextRef.current = textObj;
-    setIsEditing(true);
-    setSelectedFont(textObj.fontFamily || "Arial");
-    setSelectedColor(textObj.fill || "#000");
-    setSelectedSize(textObj.fontSize || 28);
+    // Allow fabric time to activate object then start editing
+    setTimeout(() => {
+      textObj.enterEditing();
+      textObj.selectAll();
+      canvas.requestRenderAll();
+
+      // Force focus into hidden textarea (VERY IMPORTANT)
+      try {
+        const ta = textObj.hiddenTextarea;
+        if (ta) ta.focus();
+      } catch (err) {
+        console.log("Textarea focus failed", err);
+      }
+
+      activeTextRef.current = textObj;
+      setIsEditing(true);
+    }, 50);
   };
 
   const applyToActiveText = (props) => {
@@ -359,6 +388,37 @@ export default function CanvasEditor({
     }
   };
 
+  useEffect(() => {
+    const toolbar = document.querySelector(`.${styles.floatingToolbar}`);
+    const editor = document.querySelector(`.${styles.editorWrapper}`);
+
+    if (!toolbar || !editor || !window.visualViewport) return;
+
+    const updatePosition = () => {
+      const viewport = window.visualViewport;
+
+      if (viewport.height < window.innerHeight - 100) {
+        // Keyboard is open
+        const keyboardHeight = window.innerHeight - viewport.height;
+
+        toolbar.style.bottom = `${keyboardHeight + 10}px`;
+        editor.style.paddingBottom = `${keyboardHeight + 80}px`;
+      } else {
+        // Keyboard is closed
+        toolbar.style.bottom = `20px`;
+        editor.style.paddingBottom = `0px`;
+      }
+    };
+
+    window.visualViewport.addEventListener("resize", updatePosition);
+    window.visualViewport.addEventListener("scroll", updatePosition);
+
+    return () => {
+      window.visualViewport.removeEventListener("resize", updatePosition);
+      window.visualViewport.removeEventListener("scroll", updatePosition);
+    };
+  }, []);
+
   return (
     <div className={styles.editorWrapper}>
       <div className={styles.back} onClick={() => router.back()}>
@@ -366,9 +426,14 @@ export default function CanvasEditor({
       </div>
       <div className={styles.mobileIconsContainer}>
         <div className={styles.mobileIconsRight}>
-          <button className={styles.mobileIcon} onClick={() => router.push('/cart')}>
-            {count > "0" && <span className={styles.badge}>{count}</span>}
-            <Image src={bag} alt="bag"/>
+          <button
+            className={styles.mobileIcon}
+            onClick={() => router.push("/cart")}
+          >
+            {cartCount > "0" && (
+              <span className={styles.badge}>{cartCount}</span>
+            )}
+            <Image src={bag} alt="bag" />
           </button>
           <button className={styles.mobileIcon} onClick={handleWishlistClick}>
             <Heart
@@ -378,7 +443,7 @@ export default function CanvasEditor({
             />
           </button>
           <button className={styles.mobileIcon} onClick={handleShare}>
-            <Image src={share} alt="share"/>
+            <Image src={share} alt="share" />
           </button>
         </div>
       </div>
@@ -422,7 +487,7 @@ export default function CanvasEditor({
             <span className={styles.toolLabel}>Fonts</span>
           </button>
 
-          <div className={styles.toolButton}>
+          <div className={styles.toolButton} onClick={startTextEditing}>
             <span className={styles.iconKeyboard}>⌨</span>
             <span className={styles.toolLabel}>Edit</span>
           </div>
