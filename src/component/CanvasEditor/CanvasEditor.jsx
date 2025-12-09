@@ -26,7 +26,7 @@ export default function CanvasEditor({
   const [activeTab, setActiveTab] = useState("font");
   const [isWishlisted, setIsWishlisted] = useState(product?.isInWishlist);
   const [fonts, setFonts] = useState([]);
-  const [canvasbackground,setCanvasBackground] = useState("")
+  const [canvasbackground, setCanvasBackground] = useState("");
   const router = useRouter();
   const { cartCount } = useCart();
   const count = localStorage.getItem("count");
@@ -142,60 +142,87 @@ export default function CanvasEditor({
     canvas.on("selection:cleared", clearSelection);
 
     canvas.on("mouse:down", (opt) => {
-      const t = opt.target;
-      if (t && t.type === "textbox") {
-        canvas.setActiveObject(t);
-        handleSelection({ selected: [t] });
-      } else {
-        startTextEditing();
+      const target = opt.target;
+
+      if (target && target.type === "textbox") {
+        canvas.setActiveObject(target);
+        activeTextRef.current = target;
+
+        // Update toolbar
+        setSelectedFont(target.fontFamily || "Arial");
+        setSelectedColor(target.fill || "#000000");
+        setSelectedSize(target.fontSize || 28);
+
+        setTimeout(() => {
+          target.enterEditing();
+
+          // Do NOT call selectAll()
+          // Do NOT set selection start/end
+          // → Fabric.js will automatically place cursor where user clicked!
+
+          const textarea = target.hiddenTextarea;
+          if (textarea) {
+            textarea.focus();
+          }
+
+          setIsEditing(true);
+          canvas.requestRenderAll();
+        }, 0);
+
+        return;
       }
+
+      // Click outside
+      canvas.discardActiveObject();
+      canvas.renderAll();
+      activeTextRef.current = null;
+      setIsEditing(false);
     });
 
     loadProductImages(canvas);
   };
 
   const loadProductImages = (canvas) => {
-  const shirtUrl = getRealImageUrl(product?.canvasImage);
+    const shirtUrl = getRealImageUrl(product?.canvasImage);
 
-  if (!shirtUrl) return;
+    if (!shirtUrl) return;
 
-  window.fabric.Image.fromURL(
-    shirtUrl,
-    (shirtImg) => {
-      if (!shirtImg.width) return;
+    window.fabric.Image.fromURL(
+      shirtUrl,
+      (shirtImg) => {
+        if (!shirtImg.width) return;
 
-      const scale = (canvas.width / shirtImg.width) * 0.68;
+        const scale = (canvas.width / shirtImg.width) * 0.68;
 
-      shirtImg.set({
-        scaleX: scale,
-        scaleY: scale,
-        top: 125,
-        left: 100,
-      });
+        shirtImg.set({
+          scaleX: scale,
+          scaleY: scale,
+          top: 125,
+          left: 100,
+        });
 
-      // Set as Fabric background
-      canvas.setBackgroundImage(shirtImg, () => {
-        canvas.renderAll();
-        addTextBelowIllustration(canvas, null);
+        // Set as Fabric background
+        canvas.setBackgroundImage(shirtImg, () => {
+          canvas.renderAll();
+          addTextBelowIllustration(canvas, null);
 
-        // Extract background color
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = shirtImg.width;
-        tempCanvas.height = shirtImg.height;
-        const ctx = tempCanvas.getContext("2d");
-        ctx.drawImage(shirtImg._element, 0, 0);
+          // Extract background color
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = shirtImg.width;
+          tempCanvas.height = shirtImg.height;
+          const ctx = tempCanvas.getContext("2d");
+          ctx.drawImage(shirtImg._element, 0, 0);
 
-        // Get pixel data of top-left corner (0,0)
-        const pixelData = ctx.getImageData(0, 0, 1, 1).data;
-        const bgColor = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
-        setCanvasBackground(bgColor)
-        console.log("Background color:", typeof bgColor);
-      });
-    },
-    { crossOrigin: "anonymous" }
-  );
-};
-
+          // Get pixel data of top-left corner (0,0)
+          const pixelData = ctx.getImageData(0, 0, 1, 1).data;
+          const bgColor = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
+          setCanvasBackground(bgColor);
+          console.log("Background color:", typeof bgColor);
+        });
+      },
+      { crossOrigin: "anonymous" }
+    );
+  };
 
   useEffect(() => {
     Object.values(fontMap).forEach((font) => {
