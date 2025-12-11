@@ -9,6 +9,12 @@ import share from "../../assessts/share.svg";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import api from "@/axiosInstance/axiosInstance";
+import font from "../../assessts/font.svg"
+import letter from "../../assessts/letter1.svg"
+import family from "../../assessts/family.svg"
+import keyboard from "../../assessts/keyboard.svg"
+import line from "../../assessts/Line.svg"
+
 
 export default function CanvasEditor({
   product,
@@ -523,7 +529,7 @@ export default function CanvasEditor({
               activeTab === "size" ? styles.activeTool : ""
             }`}
           >
-            <span className={styles.iconAa}>Aa</span>
+            <Image src={letter} alt="font"/>
             <span className={styles.toolLabel}>Font Size</span>
           </button>
 
@@ -533,7 +539,7 @@ export default function CanvasEditor({
               activeTab === "color" ? styles.activeTool : ""
             }`}
           >
-            <span className={styles.iconColorA}>A</span>
+             <Image src={font} alt="font"/>
             <span className={styles.toolLabel}>Colour</span>
           </button>
 
@@ -543,12 +549,12 @@ export default function CanvasEditor({
               activeTab === "font" ? styles.activeTool : ""
             }`}
           >
-            <span className={styles.iconF}>f</span>
+            <Image src={family} alt="font"/>
             <span className={styles.toolLabel}>Fonts</span>
           </button>
 
           <div className={styles.toolButton} onClick={startTextEditing}>
-            <span className={styles.iconKeyboard}>⌨</span>
+             <Image src={keyboard} alt="font"/>
             <span className={styles.toolLabel}>Edit</span>
           </div>
 
@@ -572,6 +578,7 @@ export default function CanvasEditor({
                     style={{ fontFamily: font.family }}
                   >
                     {font.family}
+                    <Image src={line} alt="line"/>
                   </button>
                 ))}
               </div>

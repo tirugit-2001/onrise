@@ -68,7 +68,7 @@
   @media (max-width: 480px) {
     .floatingToolbar {
       gap: 16px;
-      padding: 0 16px;
+      padding: 5px 16px;
       justify-content: center;
       position: fixed;
       bottom: 20px;
@@ -84,7 +84,7 @@
   }
   @media (max-width: 440px) {
     gap: 16px;
-    padding: 0 16px;
+    padding: 5px 16px;
     justify-content: center;
     bottom: 180;
   }
@@ -169,10 +169,12 @@
   .iconF,
   .iconKeyboard {
     font-size: 18px;
+    margin-top: 4px;
   }
 
   .toolLabel {
-    font-size: 8px;
+    font-size:11px;
+    margin-top: 6px;
   }
 
   .closeToolbarBtn {
@@ -186,13 +188,13 @@
 // ──────────────────────────────
 .optionsPanel {
   position: absolute;
-  bottom: 52px;
+  bottom: 70.8px;
   left: 51%;
   background-color: #f3d4a7;
   transform: translateX(-50%);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
   z-index: 1001;
-  width: 122%;
+  width: 110%;
   animation: popUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.5);
 
   // Hide scrollbars everywhere inside
@@ -207,16 +209,30 @@
 // ──────────────────────────────
 // Content Grids (Responsive & No Scrollbar)
 // ──────────────────────────────
-.fontOptions,
+
 .colorOptions,
 .sizeOptions {
   display: flex;
-  gap: 4px;
+  gap: 10px;
+  justify-content: left;
+  padding: 12px;
+  background-color: #fff2de;
+
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.fontOptions {
+  display: flex;
+  gap: 0;
   justify-content: left;
   padding: 8px;
   background-color: #fff2de;
 
-  // Hide scrollbar but allow scrolling
   overflow-x: auto;
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -227,6 +243,9 @@
 
 // Font buttons
 .fontOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   background: transparent;
   border: none;
   border-radius: 5px;
