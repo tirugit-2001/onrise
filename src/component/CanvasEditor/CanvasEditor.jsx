@@ -15,7 +15,11 @@ import family from "../../assessts/family.svg";
 import keyboard from "../../assessts/keyboard.svg";
 import line from "../../assessts/Line.svg";
 
-export default function CanvasEditor({ product, setPrintingImg, addToWishlist }) {
+export default function CanvasEditor({
+  product,
+  setPrintingImg,
+  addToWishlist,
+}) {
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
   const activeTextRef = useRef(null);
@@ -30,7 +34,6 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
   const [canvasbackground, setCanvasBackground] = useState("");
   const router = useRouter();
   const { cartCount } = useCart();
-
   const loadedFonts = new Set();
 
   const loadFont = async (font) => {
@@ -57,7 +60,10 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
     const fetchFonts = async () => {
       try {
         const res = await api.get("/v2/font?activeOnly=true", {
-          headers: { "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10" },
+          headers: {
+            "x-api-key":
+              "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+          },
         });
         setFonts(res?.data?.data);
       } catch (err) {
@@ -68,7 +74,8 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
   }, []);
 
   const defaultFontSize = product?.fontSize || selectedSize;
-  const defaultFontFamily = fontMap[product?.fontFamily] || product?.fontFamily || selectedFont;
+  const defaultFontFamily =
+    fontMap[product?.fontFamily] || product?.fontFamily || selectedFont;
   const defaultFontColor = product?.fontColor || selectedColor;
 
   const SAFE = { left: 170, top: 260, width: 220, height: 180 };
@@ -94,7 +101,8 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
       return () => disposeCanvas();
     }
     const s = document.createElement("script");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js";
+    s.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js";
     s.async = true;
     s.onload = initCanvas;
     document.body.appendChild(s);
@@ -107,7 +115,9 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
   }, [product]);
 
   const disposeCanvas = () => {
-    try { fabricCanvasRef.current?.dispose(); } catch (e) {}
+    try {
+      fabricCanvasRef.current?.dispose();
+    } catch (e) {}
     fabricCanvasRef.current = null;
     activeTextRef.current = null;
   };
@@ -186,27 +196,28 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
   const loadProductImages = (canvas) => {
     const shirtUrl = getRealImageUrl(product?.canvasImage);
     if (!shirtUrl) return;
-    window.fabric.Image.fromURL(shirtUrl, (shirtImg) => {
-      if (!shirtImg.width) return;
-      const scale = (canvas.width / shirtImg.width) * 0.68;
-      shirtImg.set({ scaleX: scale, scaleY: scale, top: 125, left: 100 });
-      canvas.setBackgroundImage(shirtImg, () => {
-        canvas.renderAll();
-        addTextBelowIllustration(canvas, null);
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = shirtImg.width;
-        tempCanvas.height = shirtImg.height;
-        const ctx = tempCanvas.getContext("2d");
-        ctx.drawImage(shirtImg._element, 0, 0);
-        const pixelData = ctx.getImageData(0, 0, 1, 1).data;
-        const bgColor = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
-        setCanvasBackground(bgColor);
-      });
+    window.fabric.Image.fromURL(
+      shirtUrl,
+      (shirtImg) => {
+        if (!shirtImg.width) return;
+        const scale = (canvas.width / shirtImg.width) * 0.68;
+        shirtImg.set({ scaleX: scale, scaleY: scale, top: 125, left: 100 });
+        canvas.setBackgroundImage(shirtImg, () => {
+          canvas.renderAll();
+          addTextBelowIllustration(canvas, null);
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = shirtImg.width;
+          tempCanvas.height = shirtImg.height;
+          const ctx = tempCanvas.getContext("2d");
+          ctx.drawImage(shirtImg._element, 0, 0);
+          const pixelData = ctx.getImageData(0, 0, 1, 1).data;
+          const bgColor = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
+          setCanvasBackground(bgColor);
+        });
       },
       { crossOrigin: "anonymous" }
     );
   };
-
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -290,8 +301,17 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
           ta.style.fontFamily = text.fontFamily || "Arial";
           ta.style.color = text.fill || "#000";
           ta.style.fontSize = (text.fontSize || 28) + "px";
+
+          setTimeout(() => {
+            const scrollAmount = window.innerHeight * 0.1;
+            window.scrollTo({
+              top: window.scrollY + scrollAmount,
+              behavior: "smooth",
+            });
+          }, 300);
         }
       } catch (e) {}
+
       activeTextRef.current = text;
       setIsEditing(true);
     });
@@ -316,7 +336,9 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
   const startTextEditing = () => {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
-    const textObj = activeTextRef.current || canvas.getObjects().find((o) => o.type === "textbox");
+    const textObj =
+      activeTextRef.current ||
+      canvas.getObjects().find((o) => o.type === "textbox");
     if (!textObj) return;
 
     canvas.setActiveObject(textObj);
@@ -331,7 +353,9 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
 
   const applyToActiveText = (props) => {
     const canvas = fabricCanvasRef.current;
-    const obj = activeTextRef.current || canvas?.getObjects().find((o) => o.type === "textbox");
+    const obj =
+      activeTextRef.current ||
+      canvas?.getObjects().find((o) => o.type === "textbox");
     if (!obj) return;
     obj.set(props);
     canvas?.requestRenderAll();
@@ -343,7 +367,12 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
         if (props.fontSize) ta.style.fontSize = props.fontSize + "px";
       }
     } catch (e) {}
-    setPrintingImg({ textColor: obj.fill, fontFamily: obj.fontFamily, printText: obj.text, fontSize: obj.fontSize });
+    setPrintingImg({
+      textColor: obj.fill,
+      fontFamily: obj.fontFamily,
+      printText: obj.text,
+      fontSize: obj.fontSize,
+    });
   };
 
   const onFontSelect = async (fontObj) => {
@@ -380,6 +409,25 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
       }
     });
   }, [fonts]);
+
+  const prevHeight = useRef(window.innerHeight);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const currentHeight = window.innerHeight;
+
+      // Keyboard opened (height decreases sharply)
+      if (prevHeight.current - currentHeight > 150) {
+        const scrollAmount = window.innerHeight * 0.8; // 8%
+        window.scrollBy({ top: scrollAmount, behavior: "smooth" });
+      }
+
+      prevHeight.current = currentHeight;
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <div className={styles.editorWrapper}>
@@ -425,7 +473,7 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
               activeTab === "size" ? styles.activeTool : ""
             }`}
           >
-            <Image src={letter} alt="font"/>
+            <Image src={letter} alt="font" />
             <span className={styles.toolLabel}>Font Size</span>
           </button>
 
@@ -435,7 +483,7 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
               activeTab === "color" ? styles.activeTool : ""
             }`}
           >
-             <Image src={font} alt="font"/>
+            <Image src={font} alt="font" />
             <span className={styles.toolLabel}>Colour</span>
           </button>
 
@@ -445,12 +493,12 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
               activeTab === "font" ? styles.activeTool : ""
             }`}
           >
-            <Image src={family} alt="font"/>
+            <Image src={family} alt="font" />
             <span className={styles.toolLabel}>Fonts</span>
           </button>
 
           <div className={styles.toolButton} onClick={startTextEditing}>
-             <Image src={keyboard} alt="font"/>
+            <Image src={keyboard} alt="font" />
             <span className={styles.toolLabel}>Edit</span>
           </div>
 
@@ -474,7 +522,7 @@ export default function CanvasEditor({ product, setPrintingImg, addToWishlist })
                     style={{ fontFamily: font.family }}
                   >
                     {font.family}
-                    <Image src={line} alt="line"/>
+                    <Image src={line} alt="line" />
                   </button>
                 ))}
               </div>
