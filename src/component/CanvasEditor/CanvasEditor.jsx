@@ -247,7 +247,6 @@ export default function CanvasEditor({
 
     const fontName =
       fontMap[product?.fontFamily] || product?.fontFamily || selectedFont;
-
     const fontData = fonts.find((f) => f.family === fontName);
 
     if (fontData) {
@@ -256,13 +255,39 @@ export default function CanvasEditor({
     }
 
     const MAX_LINES = 2;
+    const MAX_CHARS_PER_LINE = 24;
+
+    const truncateText = (text) => {
+      const lines = text.split("\n");
+      const processedLines = lines.slice(0, MAX_LINES).map((line) => {
+        if (line.length > MAX_CHARS_PER_LINE) {
+          return line.substring(0, MAX_CHARS_PER_LINE - 1);
+        }
+        return line;
+      });
+
+      // If more than 2 lines, keep only first 2 and add … on last line if needed
+      let result = processedLines.slice(0, MAX_LINES);
+      if (lines.length > MAX_LINES && result.length === MAX_LINES) {
+        const lastLine = result[MAX_LINES - 1];
+        if (lastLine.length >= MAX_CHARS_PER_LINE) {
+          result[MAX_LINES - 1] =
+            lastLine.substring(0, MAX_CHARS_PER_LINE - 2) + "…";
+        } else if (lastLine.length < MAX_CHARS_PER_LINE) {
+          result[MAX_LINES - 1] =
+            lastLine.padEnd(MAX_CHARS_PER_LINE - 1, " ") + "…";
+        }
+      }
+
+      return result.join("\n");
+    };
 
     const text = new window.fabric.Textbox(
       product?.presetText || "YOUR TEXT HERE",
       {
         left: SAFE.left + 50,
         top: topPos,
-        width: SAFE.width - 60,
+        width: SAFE.width - 40,
         fontSize: defaultFontSize,
         fontFamily: defaultFontFamily,
         fill: defaultFontColor,
@@ -276,24 +301,36 @@ export default function CanvasEditor({
         hasControls: false,
         hasBorders: false,
         selectable: true,
-        maxLines: MAX_LINES,
       }
     );
 
-    // Override the internal rendering to strictly limit visible lines
-    text._renderTextLinesBackground = function (ctx) {
-      // Custom background rendering (optional)
+    // Main enforcement on text change
+    const enforceLimits = () => {
+      if (!text.text || text.text === text._text) return;
+
+      const newText = truncateText(text.text);
+      if (newText !== text.text) {
+        // Store selection to restore cursor position
+        const selection = text.selectionStart;
+        text.set("text", newText);
+        canvas.renderAll();
+
+        // Try to restore cursor position (best effort)
+        requestAnimationFrame(() => {
+          text.selectionStart = text.selectionEnd = Math.min(
+            selection,
+            newText.length
+          );
+          text.enterEditing();
+          text.setSelectionStartEnd(text.selectionStart, text.selectionEnd);
+        });
+      }
     };
 
-    // Force re-wrap on text change to respect maxLines
-    text.on("changed", () => {
-      const lines = text.textLines;
-      if (lines.length > MAX_LINES) {
-        // Keep only first 2 lines
-        const visibleText = lines.slice(0, MAX_LINES).join("\n");
-        text.set("text", visibleText);
-        canvas.requestRenderAll();
-      }
+    text.on("changed", enforceLimits);
+    text.on("editing:entered", () => {
+      // Initial enforcement when user starts typing
+      enforceLimits();
     });
 
     // Sync printing data
@@ -309,6 +346,8 @@ export default function CanvasEditor({
     text.on("changed", syncPrinting);
 
     canvas.add(text);
+    canvas.setActiveObject(text);
+    text.enterEditing();
     canvas.requestRenderAll();
   };
 
