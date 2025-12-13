@@ -73,14 +73,21 @@
 
 /* Mobile */
 @media (max-width: 768px) {
-  .tickerItem {
-    font-size: 70px;
-    padding: 8px 30px;
-    border-radius: 10px;
+  .wrapper {
+    height: 220px; /* ⬅ reduce overall height */
   }
 
   .tickerContainer {
-    gap: 20px;
-    transform: rotate(-5deg);
+    gap: 14px;          /* tighter vertical spacing */
+    transform: rotate(-4deg);
+  }
+
+  .tickerItem {
+    font-size: 20px;    /* ⬅ smaller text */
+    padding: 6px 20px;  /* ⬅ smaller pill */
+    border-radius: 8px;
+    letter-spacing: 1px;
+    line-height: 1;
   }
 }
+
