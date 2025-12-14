@@ -434,30 +434,44 @@ export default function CanvasEditor({
       ta.style.top = `${text.top * zoom + canvasRect.top}px`;
     };
 
+    const moveCursorToEnd = () => {
+      const ta = text.hiddenTextarea;
+      if (!ta) return;
+
+      const len = ta.value.length;
+
+      try {
+        ta.focus({ preventScroll: true });
+        ta.setSelectionRange(len, len);
+      } catch (e) {}
+
+      // 🔥 Fabric internal sync
+      text.selectionStart = len;
+      text.selectionEnd = len;
+      text._updateTextarea();
+    };
+
     // ================================
     // Scroll logic (extra upward)
     // ================================
     const updateScrollToCursor = () => {
-      const lineHeightPx = text.fontSize * text.lineHeight;
+      const LINE_HEIGHT = text.fontSize * text.lineHeight;
+      const PADDING_TOP = 8; // textarea padding
+      const VISIBLE_LINES = Math.floor(
+        (CONTAINER_HEIGHT - PADDING_TOP * 2) / LINE_HEIGHT
+      );
+
       const cursorLine = text.get2DCursorLocation().lineIndex;
-      const cursorY = cursorLine * lineHeightPx;
 
-      const TOP_PADDING = 14;
-      const BOTTOM_PADDING = 20;
+      // 🔒 Lock cursor position to a fixed line (e.g. 3rd visible line)
+      const LOCKED_LINE_INDEX = 1; // 0-based (2 = 3rd line)
 
-      const visibleTop = scrollOffset + TOP_PADDING;
-      const visibleBottom = scrollOffset + CONTAINER_HEIGHT - BOTTOM_PADDING;
+      const targetScrollLine = cursorLine - LOCKED_LINE_INDEX;
 
-      if (cursorY + lineHeightPx > visibleBottom) {
-        scrollOffset =
-          cursorY + lineHeightPx - (CONTAINER_HEIGHT - BOTTOM_PADDING);
-      }
+      // 🔥 Convert line → pixel scroll
+      const nextScrollOffset = targetScrollLine * LINE_HEIGHT;
 
-      if (cursorY < visibleTop) {
-        scrollOffset = cursorY - TOP_PADDING;
-      }
-
-      scrollOffset = Math.max(0, scrollOffset);
+      scrollOffset = Math.max(0, nextScrollOffset);
     };
 
     // ================================
@@ -474,6 +488,7 @@ export default function CanvasEditor({
         scrollOffset = 0;
         canvas.requestRenderAll();
         styleTextarea();
+        moveCursorToEnd(); // 🔥
         return;
       }
 
@@ -488,6 +503,11 @@ export default function CanvasEditor({
       lockDimensions();
       canvas.requestRenderAll();
       styleTextarea();
+
+      // 🔥 FORCE cursor to end after every change
+      requestAnimationFrame(() => {
+        moveCursorToEnd();
+      });
 
       setPrintingImg({
         textColor: text.fill,
@@ -515,7 +535,7 @@ export default function CanvasEditor({
           ta.focus();
           ta.setSelectionRange(len, len);
         }
-
+        moveCursorToEnd();
         updateScrollToCursor();
         canvas.requestRenderAll();
       }, 20);
