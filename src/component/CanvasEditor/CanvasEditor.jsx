@@ -517,33 +517,25 @@ export default function CanvasEditor({
     // ================================
     const updateScrollToCursor = () => {
       const LINE_HEIGHT = text.fontSize * text.lineHeight;
-      const PADDING_TOP = 8; // textarea padding
-      const VISIBLE_LINES = Math.floor(
-        (CONTAINER_HEIGHT - PADDING_TOP * 2) / LINE_HEIGHT
-      );
+      const PADDING_TOP = 8;
 
-      const cursorLine = text.get2DCursorLocation().lineIndex;
-      const totalLines = text._textLines ? text._textLines.length : 0;
+      const visibleHeight = CONTAINER_HEIGHT - PADDING_TOP * 2;
+      const VISIBLE_LINES = Math.floor(visibleHeight / LINE_HEIGHT);
 
-      // When cursor reaches the second line (index 1), scroll so that
-      // the second line is at the top and third line becomes visible
-      let targetScrollLine = 0;
+      const totalLines = text._textLines.length;
 
-      if (cursorLine >= 1) {
-        // When on line 2 (index 1) or beyond, scroll so line 2 (index 1) is at the top
-        // This ensures line 3 (index 2) becomes visible when typing on line 2
-        targetScrollLine = cursorLine;
-
-        // Don't scroll past the end - ensure we don't scroll beyond what's needed
-        const maxTopLine = Math.max(0, totalLines - VISIBLE_LINES);
-        targetScrollLine = Math.min(targetScrollLine, maxTopLine);
+      // ✅ If text fits in visible area → no scroll
+      if (totalLines <= VISIBLE_LINES) {
+        scrollOffset = 0;
+        return;
       }
 
-      // 🔥 Convert line → pixel scroll
-      const nextScrollOffset = targetScrollLine * LINE_HEIGHT;
+      // ✅ Keep ONLY last visible lines in view
+      const hiddenLines = totalLines - VISIBLE_LINES;
 
-      scrollOffset = Math.max(0, nextScrollOffset);
+      scrollOffset = hiddenLines * LINE_HEIGHT;
     };
+
     // const updateScrollToCursor = () => {
     //   const LINE_HEIGHT = text.fontSize * text.lineHeight;
     //   const PADDING_TOP = 8;
