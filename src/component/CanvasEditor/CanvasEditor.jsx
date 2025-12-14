@@ -38,7 +38,7 @@ export default function CanvasEditor({
 
   // Fixed container dimensions
   const CONTAINER_WIDTH = 175;
-  const CONTAINER_HEIGHT = 70;
+  const CONTAINER_HEIGHT = 65;
 
   const loadFont = async (font) => {
     if (!font) return;
@@ -381,8 +381,8 @@ export default function CanvasEditor({
         lockScalingX: true,
         lockScalingY: true,
         hasControls: false,
-        hasBorders: true,
-        borderColor: "#ddd",
+        hasBorders: false,
+        borderColor: "transparent",
         selectable: true,
         dynamicMinWidth: CONTAINER_WIDTH,
         minWidth: CONTAINER_WIDTH,
@@ -522,51 +522,35 @@ export default function CanvasEditor({
       const visibleHeight = CONTAINER_HEIGHT - PADDING_TOP * 2;
       const VISIBLE_LINES = Math.floor(visibleHeight / LINE_HEIGHT);
 
-      const totalLines = text._textLines.length;
+      const maxWidth = CONTAINER_WIDTH - 16; // padding
+      const lines = text._textLines || [];
 
-      // ✅ If text fits in visible area → no scroll
+      const totalLines = lines.length;
+
+      // ✅ If text fits → no scroll
       if (totalLines <= VISIBLE_LINES) {
         scrollOffset = 0;
         return;
       }
 
-      // ✅ Keep ONLY last visible lines in view
-      const hiddenLines = totalLines - VISIBLE_LINES;
+      // 🔥 CHECK IF LAST VISIBLE LINE IS ACTUALLY FULL
+      const ctx = fabricCanvasRef.current.getContext();
+      ctx.font = `${text.fontSize}px ${text.fontFamily}`;
 
+      const lastVisibleLine = lines[VISIBLE_LINES - 1].join("");
+      const lastLineWidth = ctx.measureText(lastVisibleLine).width;
+
+      // ❌ Don't scroll until width is FULL
+      if (lastLineWidth < maxWidth - 2) {
+        scrollOffset = 0;
+        return;
+      }
+
+      // ✅ Scroll by exactly one line
+      const hiddenLines = totalLines - VISIBLE_LINES;
       scrollOffset = hiddenLines * LINE_HEIGHT;
     };
 
-    // const updateScrollToCursor = () => {
-    //   const LINE_HEIGHT = text.fontSize * text.lineHeight;
-    //   const PADDING_TOP = 8;
-    //   const VISIBLE_HEIGHT = CONTAINER_HEIGHT - PADDING_TOP * 2;
-    //   const VISIBLE_LINES = Math.floor(VISIBLE_HEIGHT / LINE_HEIGHT);
-
-    //   const cursorLine = text.get2DCursorLocation().lineIndex;
-    //   const totalLines = text._textLines.length;
-
-    //   // Calculate which line should be at the top of the visible area
-    //   // Keep cursor line in the middle-to-bottom portion of visible area
-    //   let targetTopLine;
-
-    //   if (cursorLine < VISIBLE_LINES - 1) {
-    //     // Near the beginning, no scroll needed
-    //     targetTopLine = 0;
-    //   } else {
-    //     // Position cursor at line 2 (index 1) of visible area
-    //     // This makes line 3 visible when you finish line 2
-    //     targetTopLine = cursorLine - 1;
-
-    //     // Don't scroll past the end
-    //     const maxTopLine = Math.max(0, totalLines - VISIBLE_LINES);
-    //     targetTopLine = Math.min(targetTopLine, maxTopLine);
-    //   }
-
-    //   scrollOffset = targetTopLine * LINE_HEIGHT;
-    // };
-    // ================================
-    // Handle typing
-    // ================================
     const handleTextChange = () => {
       if (text.text.trim() === "") {
         text.__isPlaceholder = true;
