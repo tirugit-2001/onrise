@@ -37,7 +37,7 @@ export default function CanvasEditor({
   const loadedFonts = new Set();
 
   // Fixed container dimensions
-  const CONTAINER_WIDTH = 170;
+  const CONTAINER_WIDTH = 175;
   const CONTAINER_HEIGHT = 70;
 
   const loadFont = async (font) => {
@@ -128,59 +128,29 @@ export default function CanvasEditor({
 
   // Detect iOS device
   const isIOS = () => {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    );
   };
 
   const focusTextarea = (textObj) => {
-    try {
-      const ta = textObj.hiddenTextarea;
-      if (!ta) return;
-      
-      if (isIOS()) {
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        ta.style.top = '0';
-        ta.style.width = '1px';
-        ta.style.height = '1px';
-        ta.style.opacity = '0';
-        ta.style.pointerEvents = 'none';
-        ta.style.zIndex = '-1';
-        ta.readOnly = false;
-        ta.removeAttribute('readonly');
-        
-        if (!ta.hasAttribute('inputmode')) {
-          ta.setAttribute('inputmode', 'text');
-        }
-        if (!ta.hasAttribute('autocapitalize')) {
-          ta.setAttribute('autocapitalize', 'off');
-        }
-        if (!ta.hasAttribute('autocorrect')) {
-          ta.setAttribute('autocorrect', 'off');
-        }
-        
-        const clickEvent = new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: true,
-        });
-        ta.dispatchEvent(clickEvent);
-        ta.focus();
-        
-        setTimeout(() => {
-          try {
-            ta.setSelectionRange(ta.value.length, ta.value.length);
-          } catch (e) {}
-        }, 0);
-      } else {
-        requestAnimationFrame(() => {
-          ta.focus({ preventScroll: true });
-          ta.setSelectionRange(ta.value.length, ta.value.length);
-        });
-      }
-    } catch (e) {
-      console.log("Textarea focus failed", e);
-    }
+    const ta = textObj.hiddenTextarea;
+    if (!ta) return;
+
+    requestAnimationFrame(() => {
+      ta.focus({ preventScroll: true });
+
+      const len = ta.value.length;
+      try {
+        ta.setSelectionRange(len, len);
+      } catch (e) {}
+
+      // Ensure Fabric cursor syncs
+      textObj.selectionStart = len;
+      textObj.selectionEnd = len;
+      textObj._updateTextarea();
+    });
   };
 
   const initCanvas = () => {
@@ -217,7 +187,7 @@ export default function CanvasEditor({
 
     const handleTextSelection = (target) => {
       if (!target || target.type !== "textbox") return;
-      
+
       canvas.setActiveObject(target);
       activeTextRef.current = target;
       setSelectedFont(target.fontFamily || "Arial");
@@ -328,19 +298,19 @@ export default function CanvasEditor({
       await loadFont(fontData);
       await document.fonts.ready;
     }
-    
+
     const text = new window.fabric.Textbox(
       product?.presetText || "YOUR TEXT HERE",
       {
         left: SAFE.left + 24 + (SAFE.width - CONTAINER_WIDTH) / 2,
-        top: topPos + 168,
+        top: topPos + 148,
         width: CONTAINER_WIDTH,
         fontSize: defaultFontSize,
         fontFamily: defaultFontFamily,
         fill: defaultFontColor,
         textAlign: "center",
         fontWeight: "normal",
-        lineHeight:1,
+        lineHeight: 1,
         splitByGrapheme: true,
         editable: true,
         lockMovementX: true,
@@ -349,7 +319,7 @@ export default function CanvasEditor({
         lockScalingY: true,
         hasControls: false,
         hasBorders: true,
-        borderColor: '#ddd',
+        borderColor: "#ddd",
         selectable: true,
         dynamicMinWidth: CONTAINER_WIDTH,
         minWidth: CONTAINER_WIDTH,
@@ -362,7 +332,7 @@ export default function CanvasEditor({
 
     // Override _wrapText to prevent height changes and calculate proper wrapping
     const originalWrapText = text._wrapText;
-    text._wrapText = function(lines, desiredWidth) {
+    text._wrapText = function (lines, desiredWidth) {
       const result = originalWrapText.call(this, lines, desiredWidth);
       // Force fixed height, no matter what
       this._textLines = result;
@@ -371,51 +341,64 @@ export default function CanvasEditor({
 
     // Override _renderTextLinesBackground and related methods to respect scroll
     const originalRenderText = text._renderText;
-    text._renderText = function(ctx) {
+    text._renderText = function (ctx) {
       ctx.save();
-      
+
       // Apply scroll offset
       if (scrollOffset > 0) {
         ctx.translate(0, -scrollOffset);
       }
-      
+
       originalRenderText.call(this, ctx);
       ctx.restore();
     };
 
     // Override _render to clip content and maintain fixed dimensions
     const originalRender = text._render;
-    text._render = function(ctx) {
+    text._render = function (ctx) {
       // Force dimensions before any render
       this.width = CONTAINER_WIDTH;
       this.height = CONTAINER_HEIGHT;
-      
+
       ctx.save();
-      
+
       // Clip to fixed container bounds
       ctx.beginPath();
-      ctx.rect(-CONTAINER_WIDTH / 2, -CONTAINER_HEIGHT / 2, CONTAINER_WIDTH, CONTAINER_HEIGHT);
+      ctx.rect(
+        -CONTAINER_WIDTH / 2,
+        -CONTAINER_HEIGHT / 2,
+        CONTAINER_WIDTH,
+        CONTAINER_HEIGHT
+      );
       ctx.clip();
-      
+
       originalRender.call(this, ctx);
       ctx.restore();
     };
 
     // Completely lock dimensions
     const lockDimensions = () => {
-      Object.defineProperty(text, 'width', {
-        get: function() { return CONTAINER_WIDTH; },
-        set: function(value) { /* Locked */ },
-        configurable: true
+      Object.defineProperty(text, "width", {
+        get: function () {
+          return CONTAINER_WIDTH;
+        },
+        set: function (value) {
+          /* Locked */
+        },
+        configurable: true,
       });
-      
-      Object.defineProperty(text, 'height', {
-        get: function() { return CONTAINER_HEIGHT; },
-        set: function(value) { /* Locked */ },
-        configurable: true
+
+      Object.defineProperty(text, "height", {
+        get: function () {
+          return CONTAINER_HEIGHT;
+        },
+        set: function (value) {
+          /* Locked */
+        },
+        configurable: true,
       });
     };
-    
+
     lockDimensions();
 
     // Style textarea for scrolling
@@ -423,44 +406,44 @@ export default function CanvasEditor({
       try {
         const ta = text.hiddenTextarea;
         if (ta) {
-          ta.style.position = 'fixed';
+          ta.style.position = "fixed";
           ta.style.width = `${CONTAINER_WIDTH}px`;
           ta.style.height = `${CONTAINER_HEIGHT}px`;
           ta.style.maxHeight = `${CONTAINER_HEIGHT}px`;
           ta.style.minHeight = `${CONTAINER_HEIGHT}px`;
-          ta.style.overflowY = 'scroll'; // Always show scrollbar
-          ta.style.overflowX = 'hidden';
-          ta.style.whiteSpace = 'pre-wrap';
-          ta.style.wordWrap = 'break-word';
-          ta.style.wordBreak = 'break-word';
-          ta.style.boxSizing = 'border-box';
-          ta.style.padding = '8px';
-          ta.style.resize = 'none';
-          ta.style.border = '1px solid #ddd';
-          ta.style.borderRadius = '4px';
-          ta.style.background = 'rgba(255, 255, 255, 0.95)';
-          ta.style.zIndex = '10000';
+          ta.style.overflowY = "scroll"; // Always show scrollbar
+          ta.style.overflowX = "hidden";
+          ta.style.whiteSpace = "pre-wrap";
+          ta.style.wordWrap = "break-word";
+          ta.style.wordBreak = "break-word";
+          ta.style.boxSizing = "border-box";
+          ta.style.padding = "8px";
+          ta.style.resize = "none";
+          ta.style.border = "1px solid #ddd";
+          ta.style.borderRadius = "4px";
+          ta.style.background = "rgba(255, 255, 255, 0.95)";
+          ta.style.zIndex = "10000";
           ta.style.fontFamily = text.fontFamily;
-          ta.style.fontSize = text.fontSize + 'px';
+          ta.style.fontSize = text.fontSize + "px";
           ta.style.color = text.fill;
           ta.style.textAlign = text.textAlign;
           ta.style.lineHeight = text.lineHeight;
-          
+
           if (isIOS()) {
-            ta.style.webkitOverflowScrolling = 'touch';
-            ta.style.transform = 'translate3d(0,0,0)';
+            ta.style.webkitOverflowScrolling = "touch";
+            ta.style.transform = "translate3d(0,0,0)";
           }
 
           const canvasRect = canvasRef.current.getBoundingClientRect();
           const zoom = canvas.getZoom();
           const textLeft = text.left * zoom + canvasRect.left;
           const textTop = text.top * zoom + canvasRect.top;
-          
+
           ta.style.left = `${textLeft}px`;
           ta.style.top = `${textTop}px`;
-          
+
           // Sync scroll with canvas rendering
-          ta.addEventListener('scroll', () => {
+          ta.addEventListener("scroll", () => {
             canvas.requestRenderAll();
           });
         }
@@ -469,21 +452,48 @@ export default function CanvasEditor({
       }
     };
 
+    const updateScrollToCursor = (text) => {
+      const lineHeightPx = text.fontSize * text.lineHeight;
+      const cursor = text.get2DCursorLocation();
+      const cursorLine = cursor.lineIndex;
+
+      const cursorY = cursorLine * lineHeightPx;
+
+      // 🔥 Extra breathing space (adjustable)
+      const TOP_PADDING = 12;
+      const BOTTOM_PADDING = 18;
+
+      const visibleTop = scrollOffset + TOP_PADDING;
+      const visibleBottom = scrollOffset + CONTAINER_HEIGHT - BOTTOM_PADDING;
+
+      // Scroll DOWN earlier
+      if (cursorY + lineHeightPx > visibleBottom) {
+        scrollOffset =
+          cursorY + lineHeightPx - (CONTAINER_HEIGHT - BOTTOM_PADDING);
+      }
+
+      // Scroll UP earlier
+      if (cursorY < visibleTop) {
+        scrollOffset = cursorY - TOP_PADDING;
+      }
+
+      scrollOffset = Math.max(0, scrollOffset);
+    };
+
     // Handle text input with dimension locking
     const handleTextInput = () => {
       // Force lock dimensions - CRITICAL
-      text.width = CONTAINER_WIDTH;
-      text.height = CONTAINER_HEIGHT;
-      
+      updateScrollToCursor(text);
+
       // Clear cache to force recalculation
       text._clearCache();
-      
+
       // Re-apply dimension locks
       lockDimensions();
-      
+
       canvas.requestRenderAll();
       styleTextarea();
-      
+
       setPrintingImg({
         textColor: text.fill,
         fontFamily: text.fontFamily,
@@ -499,17 +509,23 @@ export default function CanvasEditor({
       text.height = CONTAINER_HEIGHT;
       canvas.requestRenderAll();
     });
-    
+
     text.on("editing:entered", () => {
       text.width = CONTAINER_WIDTH;
       text.height = CONTAINER_HEIGHT;
       styleTextarea();
-      
+
       if (isIOS()) {
         setTimeout(() => {
           focusTextarea(text);
           styleTextarea();
         }, 10);
+
+        setTimeout(() => {
+          focusTextarea(text);
+          updateScrollToCursor(text);
+          canvas.requestRenderAll();
+        }, 20);
       }
     });
 
@@ -521,15 +537,15 @@ export default function CanvasEditor({
 
     canvas.add(text);
     canvas.setActiveObject(text);
-    
+
     setTimeout(() => {
       text.set({
         width: CONTAINER_WIDTH,
-        height: CONTAINER_HEIGHT
+        height: CONTAINER_HEIGHT,
       });
       styleTextarea();
     }, 50);
-    
+
     if (isIOS()) {
       setTimeout(() => {
         text.enterEditing();
@@ -554,28 +570,28 @@ export default function CanvasEditor({
 
     textObj.set({
       width: CONTAINER_WIDTH,
-      height: CONTAINER_HEIGHT
+      height: CONTAINER_HEIGHT,
     });
 
     canvas.setActiveObject(textObj);
-    
+
     const styleAndFocus = () => {
       const ta = textObj.hiddenTextarea;
       if (ta) {
         ta.style.width = `${CONTAINER_WIDTH}px`;
         ta.style.height = `${CONTAINER_HEIGHT}px`;
         ta.style.maxHeight = `${CONTAINER_HEIGHT}px`;
-        ta.style.overflowY = 'scroll';
-        ta.style.overflowX = 'hidden';
-        ta.style.position = 'fixed';
-        ta.style.boxSizing = 'border-box';
-        ta.style.padding = '0px';
-        ta.style.resize = 'none';
-        
+        ta.style.overflowY = "scroll";
+        ta.style.overflowX = "hidden";
+        ta.style.position = "fixed";
+        ta.style.boxSizing = "border-box";
+        ta.style.padding = "0px";
+        ta.style.resize = "none";
+
         if (isIOS()) {
-          ta.style.webkitOverflowScrolling = 'touch';
+          ta.style.webkitOverflowScrolling = "touch";
         }
-        
+
         const canvasRect = canvasRef.current.getBoundingClientRect();
         const zoom = canvas.getZoom();
         ta.style.left = `${textObj.left * zoom + canvasRect.left}px`;
@@ -583,7 +599,7 @@ export default function CanvasEditor({
       }
       focusTextarea(textObj);
     };
-    
+
     if (isIOS()) {
       textObj.enterEditing();
       styleAndFocus();
@@ -607,15 +623,15 @@ export default function CanvasEditor({
       activeTextRef.current ||
       canvas?.getObjects().find((o) => o.type === "textbox");
     if (!obj) return;
-    
+
     obj.set({
       ...props,
       width: CONTAINER_WIDTH,
-      height: CONTAINER_HEIGHT
+      height: CONTAINER_HEIGHT,
     });
-    
+
     canvas?.requestRenderAll();
-    
+
     try {
       const ta = obj.hiddenTextarea;
       if (ta) {
@@ -623,25 +639,25 @@ export default function CanvasEditor({
         ta.style.height = `${CONTAINER_HEIGHT}px`;
         ta.style.maxHeight = `${CONTAINER_HEIGHT}px`;
         ta.style.minHeight = `${CONTAINER_HEIGHT}px`;
-        ta.style.overflowY = 'scroll';
-        ta.style.overflowX = 'hidden';
-        ta.style.boxSizing = 'border-box';
-        ta.style.padding = '0px';
-        ta.style.resize = 'none';
-        
+        ta.style.overflowY = "scroll";
+        ta.style.overflowX = "hidden";
+        ta.style.boxSizing = "border-box";
+        ta.style.padding = "0px";
+        ta.style.resize = "none";
+
         if (props.fontFamily) ta.style.fontFamily = props.fontFamily;
         if (props.fill) ta.style.color = props.fill;
         if (props.fontSize) ta.style.fontSize = props.fontSize + "px";
-        
+
         if (isIOS()) {
-          ta.style.webkitOverflowScrolling = 'touch';
-          ta.style.transform = 'translate3d(0,0,0)';
+          ta.style.webkitOverflowScrolling = "touch";
+          ta.style.transform = "translate3d(0,0,0)";
         }
       }
     } catch (e) {
       console.log("Textarea update failed", e);
     }
-    
+
     setPrintingImg({
       textColor: obj.fill,
       fontFamily: obj.fontFamily,
