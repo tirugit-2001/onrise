@@ -38,8 +38,7 @@ export default function CanvasEditor({
 
   // Fixed container dimensions
   const CONTAINER_WIDTH = 175;
-  const CONTAINER_HEIGHT = 80;
-  const MAX_CHARS = 100;
+  const CONTAINER_HEIGHT = 65;
 
   const loadFont = async (font) => {
     if (!font) return;
@@ -373,7 +372,7 @@ export default function CanvasEditor({
         fill: product?.presetText ? defaultFontColor : "#999",
         textAlign: "center",
         fontWeight: "normal",
-        lineHeight: 0.8,
+        lineHeight: 1,
         splitByGrapheme: false,
         breakWords: true,
         editable: true,
@@ -382,8 +381,8 @@ export default function CanvasEditor({
         lockScalingX: true,
         lockScalingY: true,
         hasControls: false,
-        // hasBorders: true,
-        // borderColor: "#ddd",
+        hasBorders: false,
+        borderColor: "transparent",
         selectable: true,
         dynamicMinWidth: CONTAINER_WIDTH,
         minWidth: CONTAINER_WIDTH,
@@ -464,11 +463,6 @@ export default function CanvasEditor({
     const styleTextarea = () => {
       const ta = text.hiddenTextarea;
       if (!ta) return;
-
-      // Enforce max characters on the hidden textarea
-      try {
-        ta.maxLength = MAX_CHARS;
-      } catch (e) {}
 
       ta.style.position = "fixed";
       ta.style.width = `${CONTAINER_WIDTH}px`;
@@ -557,9 +551,6 @@ export default function CanvasEditor({
       scrollOffset = hiddenLines * LINE_HEIGHT;
     };
 
-    // ================================
-    // Handle typing
-    // ================================
     const handleTextChange = () => {
       if (text.text.trim() === "") {
         text.__isPlaceholder = true;
@@ -574,25 +565,6 @@ export default function CanvasEditor({
       if (text.__isPlaceholder) {
         text.__isPlaceholder = false;
         text.set({ fill: defaultFontColor });
-      }
-
-      // Enforce overall character limit
-      if (text.text && text.text.length > MAX_CHARS) {
-        const prevSel = text.selectionStart || text.text.length;
-        const newText = text.text.slice(0, MAX_CHARS);
-        text.__isPlaceholder = false;
-        text.set({ text: newText });
-        // sync hidden textarea if present
-        try {
-          const ta = text.hiddenTextarea;
-          if (ta) {
-            ta.value = newText;
-            const sel = Math.min(prevSel, MAX_CHARS);
-            ta.setSelectionRange(sel, sel);
-          }
-        } catch (e) {}
-        text.selectionStart = Math.min(prevSel, MAX_CHARS);
-        text.selectionEnd = text.selectionStart;
       }
 
       // 🔥 Correct wrapping
