@@ -77,7 +77,7 @@ export default function CanvasEditor({
     fetchFonts();
   }, []);
 
-  const defaultFontSize = product?.fontSize || selectedSize;
+  const defaultFontSize = 22 || selectedSize;
   const defaultFontFamily =
     fontMap[product?.fontFamily] || product?.fontFamily || selectedFont;
   const defaultFontColor = product?.fontColor || selectedColor;
