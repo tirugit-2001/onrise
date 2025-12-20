@@ -9,8 +9,8 @@
 }
 .mainImage {
   object-fit: contain;
-     width: 550;
-    height: 600;
+  width: 550;
+  height: 600;
 }
 
 .presetText {
@@ -18,19 +18,18 @@
   top: 59%;
   left: 50%;
   transform: translate(-50%, -50%);
-  
+
   width: 175px;
-  height: 70px; 
-  
-  box-sizing: border-box; 
+  height: 70px;
+
+  box-sizing: border-box;
   text-align: center;
   line-height: 1.2;
-  
-  
+
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
-  
+
   overflow-y: hidden;
   cursor: pointer;
   z-index: 10;
@@ -47,7 +46,7 @@ div.presetText {
   display: flex;
   align-items: center;
   justify-content: center;
-//   margin-top: -14px;
+  //   margin-top: -14px;
 }
 
 .editInput {
@@ -55,8 +54,7 @@ div.presetText {
   outline: none;
   border: none;
   resize: none;
-  display: block; 
-
+  display: block;
 }
 
 .floatingToolbar {
@@ -75,13 +73,16 @@ div.presetText {
   border: 2px solid #ffe0c2;
   z-index: 1000;
   animation: slideUp 0.4s ease;
+
+ 
   @media (max-width: 480px) {
     .floatingToolbar {
       gap: 16px;
       padding: 5px 16px;
       justify-content: center;
       position: fixed;
-      bottom: 20px;
+      bottom: 0;
+      top: 80;
       left: 50%;
       transform: translateX(-50%);
       transition: bottom 0.25s ease-in-out;
@@ -96,7 +97,7 @@ div.presetText {
     gap: 16px;
     padding: 5px 16px;
     justify-content: center;
-    bottom: 180;
+    bottom: 5;
   }
 }
 
@@ -104,12 +105,15 @@ div.presetText {
   background: none;
   border: none;
   display: flex;
+  gap: 0.2rem;
   flex-direction: column;
   align-items: center;
   cursor: pointer;
   padding: 2px;
   border-radius: 24px;
   transition: all 0.25s;
+  white-space: noWrap;
+  margin-top: 0.4rem;
 }
 
 .iconAa {
@@ -183,7 +187,7 @@ div.presetText {
   }
 
   .toolLabel {
-    font-size:11px;
+    font-size: 11px;
     margin-top: 6px;
   }
 
@@ -202,8 +206,8 @@ div.presetText {
   left: 50%;
   transform: translateX(-50%);
 
-  width: 38vw;         // ⬅ full width of parent
-  overflow-x: auto;     // ⬅ horizontal scroll
+  width: 38vw; // ⬅ full width of parent
+  overflow-x: auto; // ⬅ horizontal scroll
 
   background-color: #f3d4a7;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
@@ -218,12 +222,11 @@ div.presetText {
   -ms-overflow-style: none;
 }
 
-@media screen and (max-width:600px){
-  .optionsPanel{
+@media screen and (max-width: 600px) {
+  .optionsPanel {
     width: 100vw;
   }
 }
-
 
 // ──────────────────────────────
 // Content Grids (Responsive & No Scrollbar)
@@ -304,15 +307,13 @@ div.presetText {
   }
 }
 
-
-@media screen and (max-width:600px){
-  .colorSwatch{
-      width: 20px;
-  height: 20px;
-  padding: 18px;
-  border-radius: 8px;
+@media screen and (max-width: 600px) {
+  .colorSwatch {
+    width: 20px;
+    height: 20px;
+    padding: 18px;
+    border-radius: 8px;
   }
-  
 }
 
 // Size buttons
@@ -415,10 +416,9 @@ div.presetText {
   }
 }
 
-
-@media screen and (max-width:700px){
-  .mainImage{
-   width: 100%;
-  height: 100%;
+@media screen and (max-width: 700px) {
+  .mainImage {
+    width: 100%;
+    height: 100%;
   }
 }
