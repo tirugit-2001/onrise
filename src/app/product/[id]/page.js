@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Plus, Minus, Heart, ChevronLeft } from "lucide-react";
 import Image from "next/image";
@@ -20,6 +20,7 @@ import AddToCartSuccessSheet from "@/component/AddToCartSuccessSheet/AddToCartSu
 import { useCart } from "@/context/CartContext";
 import bag from "../../../assessts/bag.svg";
 import share from "../../../assessts/share.svg";
+import ShirtEditor from "@/component/shirtEditor/ShirtEditor";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -46,6 +47,7 @@ const ProductDetails = () => {
   const { updateCart } = useCart();
   const { cartCount } = useCart();
   const accessToken = Cookies.get("idToken");
+  const editorRef = useRef(null);
   const router = useRouter();
 
   const handleWishlistClick = async () => {
@@ -107,6 +109,10 @@ const ProductDetails = () => {
   }, [id]);
 
   useEffect(() => {
+    console.log("Ref Connection Check", editorRef.current);
+  }, [product]);
+
+  useEffect(() => {
     if (relatedId) {
       getRelatedProduct(relatedId);
     }
@@ -123,34 +129,18 @@ const ProductDetails = () => {
       setShowSizeSheet(true);
       return;
     }
-    setLoader(true)
-    let renderedImageUrl = "";
+    // setLoader(true)
+    let capturedImageUrl = "";
+    console.log("Editor Ref State:", editorRef.current);
     try {
-      const res = await api.post(
-        "/v1/cart/upload-image",
-        {
-          printingImgText: {
-            textColor: printingImg.textColor? printingImg.textColor :  product?.fontColor,
-            fontFamily: printingImg.fontFamily ? printingImg?.fontFamily :  product?.fontFamily,
-            printText: printingImg.printText ? printingImg.printText :  product?.presetText,
-            fontSize: printingImg.fontSize ? printingImg.fontSize : product?.fontSize,
-          },
-          canvasImage: product?.canvasImage,
-        },
-        {
-          headers: {
-            "x-api-key":
-              "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
-          },
-        }
-      );
-
-      renderedImageUrl = res?.data?.data?.renderedImageUrl || "";
+      if (isCustomizable && editorRef.current) {
+        capturedImageUrl = await editorRef.current.captureImage();
+        console.log("Captured Image Data", capturedImageUrl?.substring(0, 50));
+      }
     } catch (error) {
       console.log("Upload image error:", error);
     }
 
- 
     const payload = {
       productId: product.id,
       categoryId: product.categoryId,
@@ -163,12 +153,12 @@ const ProductDetails = () => {
       isCustomizable: product.isCustomizable,
 
       productImageUrl:
-        renderedImageUrl ||
+        capturedImageUrl ||
         product.productImages?.[0] ||
         product.canvasImage ||
         "",
 
-      renderedImageUrl,
+      renderedImageUrl: capturedImageUrl,
 
       dimensions: {
         length: product.dimension?.length || 0,
@@ -186,9 +176,8 @@ const ProductDetails = () => {
 
       addedAt: new Date().toISOString(),
     };
-
+    setShowSuccessCart(true);
     try {
-
       const existingItem = await db.cart
         .where("productId")
         .equals(product.id)
@@ -201,8 +190,8 @@ const ProductDetails = () => {
             (existingItem.discountPrice || existingItem.basePrice) *
             (existingItem.quantity + quantity),
 
-          renderedImageUrl,
-          productImageUrl: renderedImageUrl || existingItem.productImageUrl,
+          capturedImageUrl,
+          productImageUrl: capturedImageUrl || existingItem.productImageUrl,
         });
       } else {
         await db.cart.add(payload);
@@ -211,7 +200,7 @@ const ProductDetails = () => {
       const updatedCartItems = await db.cart.toArray();
       updateCart(updatedCartItems.length);
 
-      setShowSuccessCart(true);
+      
     } catch (err) {
       console.error("Dexie error:", err);
       toast.error("Failed to add to cart");
@@ -280,13 +269,45 @@ const ProductDetails = () => {
         <ToastContainer position="top-right" autoClose={2000} />
 
         {product?.isCustomizable ? (
-          <CanvasEditor
-            product={product}
-            onDesignChange={handleDesignChange}
-            setPrintingImg={setPrintingImg}
-            addToWishlist={addToWishlist}
-          />
+          <>
+            <div className={styles.back} onClick={() => router.back()}>
+              <ChevronLeft size={30} />
+            </div>
+            <div className={styles.mobileIconsContainer}>
+              <div className={styles.mobileIconsRight}>
+                <button
+                  className={styles.mobileIcon}
+                  onClick={() => router.push("/cart")}
+                >
+                  {cartCount > "0" && (
+                    <span className={styles.badge}>{cartCount}</span>
+                  )}
+                  <Image src={bag} alt="bag" />
+                </button>
+                <button
+                  className={styles.mobileIcon}
+                  onClick={handleWishlistClick}
+                >
+                  <Heart
+                    size={40}
+                    stroke={isWishlisted ? "red" : "black"}
+                    fill={isWishlisted ? "red" : "transparent"}
+                  />
+                </button>
+                <button className={styles.mobileIcon} onClick={handleShare}>
+                  <Image src={share} alt="share" />
+                </button>
+              </div>
+            </div>
+            <ShirtEditor product={product} ref={editorRef} />
+          </>
         ) : (
+          //  <CanvasEditor
+          //   product={product}
+          //   onDesignChange={handleDesignChange}
+          //   setPrintingImg={setPrintingImg}
+          //   addToWishlist={addToWishlist}
+          // />
           <>
             <div className={styles.back} onClick={() => router.back()}>
               <ChevronLeft size={30} />
@@ -469,9 +490,9 @@ const ProductDetails = () => {
           </BottomSheet>
         </div>
 
-        <DynamicModal open={loader} onClose={() => setLoader(false)}>
+        {/* <DynamicModal open={loader} onClose={() => setLoader(false)}>
           <AddToBagLoader />
-        </DynamicModal>
+        </DynamicModal> */}
       </div>
 
       <section style={{ width: "100%", overflowX: "auto" }}>
