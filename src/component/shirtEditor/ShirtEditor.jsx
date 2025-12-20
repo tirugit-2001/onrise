@@ -154,14 +154,16 @@ const ShirtEditor = forwardRef(({ product }, ref) => {
     fontSize: `${selectedSize}px`,
   };
 
+  console.log(imageLoaded, "oopopopopccxxxvvvv");
+
   return (
     <section className={styles.img_main_wrap} ref={editorRef}>
       <div className={styles.img_wrap}>
-        {/* {!imageLoaded && (
+        {!imageLoaded && (
           <div className={styles.shimmerWrapper}>
             <div className={styles.shimmer} />
           </div>
-        )} */}
+        )}
 
         <Image
           src={product?.canvasImage}
@@ -172,6 +174,11 @@ const ShirtEditor = forwardRef(({ product }, ref) => {
           priority
           unoptimized
           onLoadingComplete={() => setImageLoaded(true)}
+          // Ensure the image doesn't pop in abruptly
+          style={{
+            opacity: imageLoaded ? 1 : 0,
+            transition: "opacity 0.3s ease",
+          }}
         />
 
         {/* TEXT LAYER */}
@@ -196,105 +203,103 @@ const ShirtEditor = forwardRef(({ product }, ref) => {
           </div>
         )}
 
-         {isEditing && (
-        <div className={styles.floatingToolbar}>
-          <button
-            onClick={() => setActiveTab("size")}
-            className={`${styles.toolButton} ${
-              activeTab === "size" ? styles.activeTool : ""
-            }`}
-          >
-            <Image src={letterIcon} alt="size" />
-            <span>Font Size</span>
-          </button>
+        {isEditing && (
+          <div className={styles.floatingToolbar}>
+            <button
+              onClick={() => setActiveTab("size")}
+              className={`${styles.toolButton} ${
+                activeTab === "size" ? styles.activeTool : ""
+              }`}
+            >
+              <Image src={letterIcon} alt="size" />
+              <span>Font Size</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab("color")}
-            className={`${styles.toolButton} ${
-              activeTab === "color" ? styles.activeTool : ""
-            }`}
-          >
-            <Image src={fontIcon} alt="color" />
-            <span>Colour</span>
-          </button>
+            <button
+              onClick={() => setActiveTab("color")}
+              className={`${styles.toolButton} ${
+                activeTab === "color" ? styles.activeTool : ""
+              }`}
+            >
+              <Image src={fontIcon} alt="color" />
+              <span>Colour</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab("font")}
-            className={`${styles.toolButton} ${
-              activeTab === "font" ? styles.activeTool : ""
-            }`}
-          >
-            <Image src={familyIcon} alt="font" />
-            <span>Fonts</span>
-          </button>
+            <button
+              onClick={() => setActiveTab("font")}
+              className={`${styles.toolButton} ${
+                activeTab === "font" ? styles.activeTool : ""
+              }`}
+            >
+              <Image src={familyIcon} alt="font" />
+              <span>Fonts</span>
+            </button>
 
-          <div className={styles.toolButton} onClick={startTextEditing}>
-            <Image src={keyboardIcon} alt="edit" />
-            <span>Edit</span>
+            <div className={styles.toolButton} onClick={startTextEditing}>
+              <Image src={keyboardIcon} alt="edit" />
+              <span>Edit</span>
+            </div>
+
+            <button
+              className={styles.closeToolbarBtn}
+              onClick={() => setIsEditing(false)}
+            >
+              ×
+            </button>
+
+            <div className={styles.optionsPanel}>
+              {activeTab === "font" && (
+                <div className={styles.fontOptions}>
+                  {fonts.map((font) => (
+                    <button
+                      key={font.family}
+                      onClick={() => onFontSelect(font)}
+                      className={`${styles.fontOption} ${
+                        selectedFont === font.family ? styles.active : ""
+                      }`}
+                      style={{ fontFamily: font.family }}
+                    >
+                      {font.family}
+                      <Image src={lineIcon} alt="line" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === "color" && (
+                <div className={styles.colorOptions}>
+                  {COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => onColorSelect(c)}
+                      className={`${styles.colorSwatch} ${
+                        selectedColor === c ? styles.activeColor : ""
+                      }`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {activeTab === "size" && (
+                <div className={styles.sizeOptions}>
+                  {SIZES.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => onSizeSelect(s)}
+                      className={`${styles.sizeBtn} ${
+                        selectedSize === s ? styles.activeSize : ""
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-
-          <button
-            className={styles.closeToolbarBtn}
-            onClick={() => setIsEditing(false)}
-          >
-            ×
-          </button>
-
-          <div className={styles.optionsPanel}>
-            {activeTab === "font" && (
-              <div className={styles.fontOptions}>
-                {fonts.map((font) => (
-                  <button
-                    key={font.family}
-                    onClick={() => onFontSelect(font)}
-                    className={`${styles.fontOption} ${
-                      selectedFont === font.family ? styles.active : ""
-                    }`}
-                    style={{ fontFamily: font.family }}
-                  >
-                    {font.family}
-                    <Image src={lineIcon} alt="line" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {activeTab === "color" && (
-              <div className={styles.colorOptions}>
-                {COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => onColorSelect(c)}
-                    className={`${styles.colorSwatch} ${
-                      selectedColor === c ? styles.activeColor : ""
-                    }`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            )}
-
-            {activeTab === "size" && (
-              <div className={styles.sizeOptions}>
-                {SIZES.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => onSizeSelect(s)}
-                    className={`${styles.sizeBtn} ${
-                      selectedSize === s ? styles.activeSize : ""
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        )}
       </div>
-
-     
     </section>
   );
 });
