@@ -13,12 +13,11 @@ export default function OrderSuccess() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(false);
   const pollingIntervalRef = useRef(null);
-  const maxPollingTime = 5 * 60 * 1000; // 5 minutes
+  const maxPollingTime = 1 * 60 * 1000;
   const pollingStartTime = useRef(Date.now());
 
   useEffect(() => {
     const verifyPayment = async () => {
-      // Get stored order data from localStorage
       const orderId = localStorage.getItem("pendingOrderId");
       const cashfreeOrderId = localStorage.getItem("pendingCashfreeOrderId");
       const orderAmount = localStorage.getItem("pendingOrderAmount");
@@ -43,7 +42,6 @@ export default function OrderSuccess() {
 
     verifyPayment();
 
-    // Cleanup polling on unmount
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -94,6 +92,7 @@ export default function OrderSuccess() {
       console.log("Payment status response:", res.data);
 
       if (res.data.success) {
+        localStorage.setItem("orderId",res?.data?.data?.orderId)
         // Check if order was already confirmed (backend processed it)
         if (
           res.data.message?.includes("already confirmed") ||
@@ -113,7 +112,7 @@ export default function OrderSuccess() {
           // Clear cart
           await db.cart.clear();
 
-          toast.success("Order Confirmed 🎉");
+          // toast.success("Order Confirmed 🎉");
           setSuccess(true);
           setLoading(false);
 
@@ -258,7 +257,7 @@ export default function OrderSuccess() {
           <button
             onClick={() => router.push("/orders")}
             style={{
-              padding: "10px 20px",
+              padding: "8px 12px",
               backgroundColor: "#ff6b00",
               color: "white",
               border: "none",
@@ -312,7 +311,7 @@ export default function OrderSuccess() {
       </h1>
       <p style={{ color: "#666", marginBottom: "30px", fontSize: "18px" }}>
         Your order has been placed successfully. You will receive a confirmation
-        email shortly.
+        message shortly.
       </p>
       <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
         <button

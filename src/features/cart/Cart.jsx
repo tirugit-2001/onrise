@@ -15,6 +15,7 @@ import Cookies from "js-cookie";
 import { load } from "@cashfreepayments/cashfree-js";
 import DynamicModal from "@/component/Modal/Modal";
 import LoginForm from "../signup/LogIn/LoginForm";
+import AddToBagLoader from "@/component/AddToBagLoader/AddToBagLoader";
 
 const Cart = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -26,6 +27,10 @@ const Cart = () => {
   const accessToken = Cookies.get("idToken");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
+  const [cartLoader, setCartLodaer] = useState(false);
+  const [showCartUI, setShowCartUI] = useState(true);
+
+  console.log(cartItems, "sksksiisoueuyyexxxx");
 
   // useEffect(() => {
   //   const token = Cookies.get("idToken");
@@ -80,7 +85,7 @@ const Cart = () => {
       if (!item) return;
       await db.cart.delete(item.id);
       setCartItems((prev) => prev.filter((i) => i.productId !== productId));
-      toast.success("Item removed");
+      // toast.success("Item removed");
     } catch (err) {
       toast.error("Failed to remove item");
     }
@@ -114,35 +119,68 @@ const Cart = () => {
     }
   };
 
+  console.log(cartItems[0]?.fullProductUrl, "dsdsssssssssssss");
+
+  const orderPayloadItems = cartItems.map((item) => ({
+    name: item.name,
+    sku: item.sku || item.productId,
+    totalPrice: item.totalPrice,
+    quantity: item.quantity,
+    categoryId: item.categoryId,
+    isCustomizable: !!item.isCustomizable,
+    productImageUrl: item?.fullProductUrl,
+    discount: item.discount || 0,
+    tax: item.tax || 0,
+    hsn: item.hsn || null,
+  }));
+
+  const customizableItem = cartItems.find((item) => item.isCustomizable);
+  console.log(customizableItem?.illustrationImage, "jdksjdkjsduuuyyyy");
+  const uploadImagePayload = customizableItem
+    ? {
+        printText: customizableItem.presetText || "Empty Text",
+        textColor: customizableItem.textColor || "",
+        fontFamily: customizableItem.fontFamily || "",
+        fontSize: customizableItem.fontSize || "",
+        illustrationImage: customizableItem?.illustrationImage,
+      }
+    : null;
+
   // ----------------- Cashfree Integration -----------------
   const handlePayNow = async () => {
-
     if (cartItems.length === 0) {
       toast.warning("Your cart is empty!");
       return;
     }
 
     try {
-      const res = await api.post(
+      setCartLodaer(true);
+      let renderedImageUrl = null;
+
+      if (uploadImagePayload) {
+        const uploadRes = await api.post(
+          "/v1/cart/upload-image",
+          { printingImgText: uploadImagePayload },
+          {
+            headers: {
+              "x-api-key":
+                "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+            },
+          }
+        );
+        renderedImageUrl = uploadRes?.data?.data?.renderedImageUrl || null;
+      }
+
+      const finalItems = orderPayloadItems.map((item) =>
+        item.isCustomizable ? { ...item, imageUrl: renderedImageUrl } : item
+      );
+
+      const orderRes = await api.post(
         "/v1/orders/create",
         {
-          // shippingAddressId: addressList[0].id,
-          // billingAddressId: addressList[0].id,
           paymentMethod: "ONLINE",
           totalAmount: grandTotal,
-          items: [
-            {
-              name: "Product Name",
-              sku: "SKU123",
-              totalPrice: grandTotal,
-              quantity: 2,
-              categoryId: "H8SZ4VfsFXa4C9cUeonB",
-              isCustomizable: false,
-              discount: 0,
-              tax: 12,
-              hsn: 482090,
-            },
-          ],
+          items: finalItems,
         },
         {
           headers: {
@@ -152,15 +190,7 @@ const Cart = () => {
         }
       );
 
-      const orderData = res?.data?.data;
-      localStorage.setItem("pendingOrderId", orderData.orderId);
-      localStorage.setItem(
-        "pendingCashfreeOrderId",
-        orderData.cashfree.orderId
-      );
-      localStorage.setItem("pendingOrderAmount", String(grandTotal));
-      console.log("Order response:", orderData?.cashfree?.sessionId);
-
+      const orderData = orderRes?.data?.data;
       const paymentSessionId = orderData?.cashfree?.sessionId;
 
       if (!paymentSessionId) {
@@ -168,22 +198,21 @@ const Cart = () => {
         return;
       }
 
-      const checkoutOptions = {
-        paymentSessionId,
-        redirectTarget: "_self",
-      };
+      // 🔥 SHOW CHECKOUT, HIDE CART
+      setShowCartUI(false);
 
-      cashfree.checkout(checkoutOptions).then((result) => {
-        if (result.error) {
-          toast.error(result.error.message);
-        }
-        if (result.redirect) {
-          console.log("Payment redirection in progress");
-        }
+      const cashfree = Cashfree({ mode: "production" });
+
+      cashfree.checkout({
+        paymentSessionId,
+        redirectTarget: document.getElementById("cashfree-dropin"),
+        returnUrl: `${"https://onrise.in"}/order-success?order_id={order_id}`,
       });
     } catch (error) {
-      console.error("Cashfree error:", error);
-      toast.error("Failed to initiate payment.");
+      console.error("Payment error:", error);
+      toast.error("Failed to initiate payment");
+    } finally {
+      setCartLodaer(false);
     }
   };
 
@@ -210,109 +239,129 @@ const Cart = () => {
   };
 
   return (
-    <div className={styles.cartPage}>
-      <ToastContainer position="top-right" autoClose={2000} />
-      {cartItems?.length > 0 ? (
-        <>
-          <button className={styles.iconBtn} onClick={() => router.push("/")}>
-            <ChevronLeft size={22} />
-          </button>
-          <CartRewards totalAmount={bagTotal} />
+    <>
+      <div
+        id="cashfree-dropin"
+        style={{
+          width: "100%",
+          height: "auto",
+        }}
+      />
+      {
+        showCartUI && 
+         <div className={styles.cartPage}>
+        <ToastContainer position="top-right" autoClose={2000} />
+        {cartItems?.length > 0 ? (
+          <>
+            <button className={styles.iconBtn} onClick={() => router.push("/")}>
+              <ChevronLeft size={22} />
+            </button>
+            <CartRewards totalAmount={bagTotal} />
 
-          <div className={styles.cartContainer}>
-            <div className={styles.cartItems}>
-              {cartItems.map((item) => (
-                <div key={item.id} className={styles.cartItem}>
-                  <div className={styles.itemImage}>
-                    <img src={item.productImageUrl} alt={item.name} />
-                  </div>
-
-                  <div className={styles.itemDetails}>
-                    <div className={styles.itemHeader}>
-                      <h3 className={styles.itemName}>{item.name}</h3>
-                      <button
-                        onClick={() => removeFromCart(item?.productId)}
-                        className={styles.removeBtn}
-                      >
-                        <Trash2 size={20} />
-                      </button>
+            <div className={styles.cartContainer}>
+              <div className={styles.cartItems}>
+                {cartItems.map((item) => (
+                  <div key={item.id} className={styles.cartItem}>
+                    <div className={styles.itemImage}>
+                      <img src={item.productImageUrl} alt={item.name} />
                     </div>
 
-                    <div className={styles.itemMeta}>
-                      <span>{item.options?.[0]?.value} |</span>
-                      <span className={styles.quantitySelector}>
-                        QTY |
-                        <select
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleQuantityChange(
-                              item.id,
-                              parseInt(e.target.value)
-                            )
-                          }
+                    <div className={styles.itemDetails}>
+                      <div className={styles.itemHeader}>
+                        <h3 className={styles.itemName}>{item.name}</h3>
+                        <button
+                          onClick={() => removeFromCart(item?.productId)}
+                          className={styles.removeBtn}
                         >
-                          {[...Array(10).keys()].map((num) => (
-                            <option key={num + 1} value={num + 1}>
-                              {num + 1}
-                            </option>
-                          ))}
-                        </select>
-                      </span>
-                    </div>
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
 
-                    <div className={styles.itemFooter}>
-                      <button
-                        className={styles.wishlistBtn}
-                        onClick={() => addToWishlist(item?.productId)}
-                      >
-                        MOVE TO WISHLIST
-                      </button>
-                      <span className={styles.itemPrice}>
-                        <span className={styles.strikeValue}>
-                          ₹{item?.basePrice}
-                        </span>{" "}
-                        <span>₹{item?.discountPrice}</span>
-                      </span>
+                      <div className={styles.itemMeta}>
+                        <span>{item.options?.[0]?.value} |</span>
+                        <span className={styles.quantitySelector}>
+                          QTY |
+                          <select
+                            value={item.quantity}
+                            onChange={(e) =>
+                              handleQuantityChange(
+                                item.id,
+                                parseInt(e.target.value)
+                              )
+                            }
+                          >
+                            {[...Array(10).keys()].map((num) => (
+                              <option key={num + 1} value={num + 1}>
+                                {num + 1}
+                              </option>
+                            ))}
+                          </select>
+                        </span>
+                      </div>
+
+                      <div className={styles.itemFooter}>
+                        <button
+                          className={styles.wishlistBtn}
+                          onClick={() => addToWishlist(item?.productId)}
+                        >
+                          MOVE TO WISHLIST
+                        </button>
+                        <span className={styles.itemPrice}>
+                          <span className={styles.strikeValue}>
+                            ₹{item?.basePrice}
+                          </span>{" "}
+                          <span>₹{item?.discountPrice}</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              <div className={styles.rightSection}>
+                <DefaultAddress
+                  addressList={addressList}
+                  onChange={() => router.push("/address")}
+                />
+                <PriceList
+                  bagTotal={bagTotal}
+                  grandTotal={grandTotal}
+                  handlePayNow={handlePayNow}
+                  offerData={offerData}
+                />
+              </div>
             </div>
 
-            <div className={styles.rightSection}>
-              <DefaultAddress
-                addressList={addressList}
-                onChange={() => router.push("/address")}
+            <DynamicModal
+              open={isLoginModalVisible}
+              onClose={() => setIsLoginModalVisible(false)}
+            >
+              <LoginForm
+                onContinue={handleContinue}
+                setIsLoginModalVisible={setIsLoginModalVisible}
+                setIsLoggedIn={setIsLoggedIn}
               />
-              <PriceList
-                bagTotal={bagTotal}
-                grandTotal={grandTotal}
-                handlePayNow={handlePayNow}
-                offerData={offerData}
-              />
-            </div>
-          </div>
+            </DynamicModal>
 
-          <DynamicModal
-            open={isLoginModalVisible}
-            onClose={() => setIsLoginModalVisible(false)}
-          >
-            <LoginForm
-              onContinue={handleContinue}
-              setIsLoginModalVisible={setIsLoginModalVisible}
-              setIsLoggedIn={setIsLoggedIn}
-            />
-          </DynamicModal>
-        </>
-      ) : (
-        <NoResult
-          title="Oops! Your Cart is Empty"
-          description="Explore our products and find the perfect items for you."
-          buttonText="Explore"
-          onButtonClick={() => router.push("/")}
-        />
-      )}
-    </div>
+            <DynamicModal
+              open={cartLoader}
+              onClose={() => setCartLodaer(false)}
+            >
+              <AddToBagLoader />
+            </DynamicModal>
+          </>
+        ) : (
+          <NoResult
+            title="Oops! Your Cart is Empty"
+            description="Explore our products and find the perfect items for you."
+            buttonText="Explore"
+            onButtonClick={() => router.push("/")}
+          />
+        )}
+      </div>
+      }
+     
+    </>
   );
 };
 

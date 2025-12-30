@@ -8,7 +8,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Cookies from "js-cookie";
 import { db } from "@/lib/db";
-import styles from './ProductDetails.module.scss'
+import styles from "./ProductDetails.module.scss";
 import api from "@/axiosInstance/axiosInstance";
 import BottomSheet from "@/component/BottomSheet/BottomSheet";
 import AddToCartSuccessSheet from "@/component/AddToCartSuccessSheet/AddToCartSuccessSheet";
@@ -23,9 +23,8 @@ const ProductDetails = () => {
   const { id } = useParams();
   const router = useRouter();
   const { updateCart, cartCount } = useCart();
-  
+
   const [product, setProduct] = useState(null);
-  const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState(null);
@@ -37,11 +36,24 @@ const ProductDetails = () => {
   const [showSuccessCart, setShowSuccessCart] = useState(false);
   const [isCustomizable, setIsCustomizable] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
-
+  const [isEditing, setIsEditing] = useState(false);
+  const [text, setText] = useState("");
+  const [selectedSize, setSelectedSize] = useState(28);
+  const [selectedFont, setSelectedFont] = useState("Arial");
+  const [selectedColor, setSelectedColor] = useState("#ffffff");
   const accessToken = Cookies.get("idToken");
   const editorRef = useRef(null);
 
-  // --- Logic Functions ---
+  console.log(text, "dskdnskdiiioiiioio", selectedColor);
+
+  useEffect(() => {
+    if (product) {
+      setText(product.presetText || "Empty Text");
+      setSelectedColor(product.fontColor || "#000");
+      setSelectedFont(product.fontFamily || "");
+      setSelectedSize(product.fontSize || 28);
+    }
+  }, [product]);
 
   const handleSizeSelect = (size, autoAdd = false) => {
     setSelectedSize(size);
@@ -50,13 +62,13 @@ const ProductDetails = () => {
     );
     setSizeInfo(match || null);
 
-    // If triggered from the BottomSheet, add to cart immediately
     if (autoAdd) {
       processAddToCart(size);
     }
   };
 
   const addToCart = async () => {
+    setIsEditing(false);
     if (product?.configuration?.length > 0 && !selectedSize) {
       setShowSizeSheet(true);
       return;
@@ -76,6 +88,10 @@ const ProductDetails = () => {
       console.error("Capture image error:", error);
     }
 
+    console.log(product, "dnsdsjdiuuyyyyy");
+
+
+    console.log(product,"djkjkjdfijfidfidfidnvnvnvn")
     const payload = {
       productId: product.id,
       categoryId: product.categoryId,
@@ -96,7 +112,16 @@ const ProductDetails = () => {
       },
       options: [{ label: "Size", value: sizeToUse }],
       addedAt: new Date().toISOString(),
+      presetText: text,
+      textColor: selectedColor,
+      fontFamily: selectedFont,
+      fontSize: selectedSize,
+      canvasImage: product.canvasImage,
+      illustrationImage:product.illustrationImage,
+      fullProductUrl:product.productImages[0]
     };
+
+    console.log(payload, "dskdnskdoooooooo");
 
     try {
       const existingItem = await db.cart
@@ -107,7 +132,9 @@ const ProductDetails = () => {
       if (existingItem) {
         await db.cart.update(existingItem.id, {
           quantity: existingItem.quantity + quantity,
-          totalPrice: (existingItem.discountPrice || existingItem.basePrice) * (existingItem.quantity + quantity),
+          totalPrice:
+            (existingItem.discountPrice || existingItem.basePrice) *
+            (existingItem.quantity + quantity),
           productImageUrl: capturedImageUrl || existingItem.productImageUrl,
         });
       } else {
@@ -137,7 +164,8 @@ const ProductDetails = () => {
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+            "x-api-key":
+              "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
           },
         }
       );
@@ -146,7 +174,9 @@ const ProductDetails = () => {
         toast.success("Added to wishlist!");
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to add to wishlist");
+      toast.error(
+        error?.response?.data?.message || "Failed to add to wishlist"
+      );
     }
   };
 
@@ -158,9 +188,14 @@ const ProductDetails = () => {
           title: product?.name || "Check this out!",
           url: shareUrl,
         });
-      } catch (error) { console.log("Share cancelled", error); }
+      } catch (error) {
+        console.log("Share cancelled", error);
+      }
     } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(shareUrl)}`, "_blank");
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(shareUrl)}`,
+        "_blank"
+      );
     }
   };
 
@@ -170,7 +205,10 @@ const ProductDetails = () => {
     const fetchProduct = async () => {
       try {
         const res = await api.get(`/v2/product/${id}`, {
-          headers: { "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10" },
+          headers: {
+            "x-api-key":
+              "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+          },
         });
         const data = res?.data?.data;
         setProduct(data);
@@ -191,10 +229,15 @@ const ProductDetails = () => {
       const getRelatedProduct = async () => {
         try {
           const res = await api.get(`/v2/product/${relatedId}/related`, {
-            headers: { "x-api-key": "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10" },
+            headers: {
+              "x-api-key":
+                "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+            },
           });
           setRelatedData(res?.data?.data);
-        } catch (error) { console.log("Related fetch error", error); }
+        } catch (error) {
+          console.log("Related fetch error", error);
+        }
       };
       getRelatedProduct();
     }
@@ -213,12 +256,21 @@ const ProductDetails = () => {
         </div>
         <div className={styles.mobileIconsContainer}>
           <div className={styles.mobileIconsRight}>
-            <button className={styles.mobileIcon} onClick={() => router.push("/cart")}>
-              {cartCount > 0 && <span className={styles.badge}>{cartCount}</span>}
+            <button
+              className={styles.mobileIcon}
+              onClick={() => router.push("/cart")}
+            >
+              {cartCount > 0 && (
+                <span className={styles.badge}>{cartCount}</span>
+              )}
               <Image src={bag} alt="bag" />
             </button>
             <button className={styles.mobileIcon} onClick={handleWishlistClick}>
-              <Heart size={40} stroke={isWishlisted ? "red" : "black"} fill={isWishlisted ? "red" : "transparent"} />
+              <Heart
+                size={40}
+                stroke={isWishlisted ? "red" : "black"}
+                fill={isWishlisted ? "red" : "transparent"}
+              />
             </button>
             <button className={styles.mobileIcon} onClick={handleShare}>
               <Image src={share} alt="share" />
@@ -228,7 +280,20 @@ const ProductDetails = () => {
 
         {/* Product Visual Section */}
         {product?.isCustomizable ? (
-          <ShirtEditor product={product} ref={editorRef} />
+          <ShirtEditor
+            product={product}
+            ref={editorRef}
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            text={text}
+            setText={setText}
+            selectedSize={selectedSize}
+            selectedFont={selectedFont}
+            selectedColor={selectedColor}
+            setSelectedColor={setSelectedColor}
+            setSelectedFont={setSelectedFont}
+            setSelectedSize={setSelectedSize}
+          />
         ) : (
           <Image
             src={product?.productImages[0]}
@@ -241,16 +306,27 @@ const ProductDetails = () => {
         )}
 
         {/* Info Section */}
-        <div className={`${styles.infoSection} ${!isCustomizable && styles.infoSection_img}`}>
+        <div
+          className={`${styles.infoSection} ${
+            !isCustomizable && styles.infoSection_img
+          }`}
+        >
           <div className={styles.priceSection}>
             <h1>{product?.name}</h1>
           </div>
           <div className={styles.dis_price}>
-            <p className={styles.discountedPrice}>₹ {product?.discountedPrice}</p>
+            <p className={styles.discountedPrice}>
+              ₹ {product?.discountedPrice}
+            </p>
             <p className={styles.basePrice}>₹ {product?.basePrice}</p>
             {product?.discountedPrice && product?.basePrice && (
               <span className={styles.offerTag}>
-                {Math.round(((product.basePrice - product.discountedPrice) / product.basePrice) * 100)}% OFF
+                {Math.round(
+                  ((product.basePrice - product.discountedPrice) /
+                    product.basePrice) *
+                    100
+                )}
+                % OFF
               </span>
             )}
           </div>
@@ -272,7 +348,9 @@ const ProductDetails = () => {
                 {product?.configuration[0].options.map((s) => (
                   <button
                     key={s.value}
-                    className={`${styles.sizeBtn} ${selectedSize === s.value ? styles.activeSize : ""}`}
+                    className={`${styles.sizeBtn} ${
+                      selectedSize === s.value ? styles.activeSize : ""
+                    }`}
                     onClick={() => handleSizeSelect(s.value)}
                   >
                     {s.label}
@@ -283,12 +361,17 @@ const ProductDetails = () => {
           )}
 
           <div className={styles.button_wrapper}>
+            <button className={styles.buyit_btn} onClick={addToCart}>
+              {"BUY IT NOW"}
+              <p>(click to select size)</p>
+            </button>
             <button
               className={styles.addToCart}
               onClick={addToCart}
               disabled={loader}
             >
               {loader ? "ADDING..." : "ADD TO BAG"}
+              <p>(click to select size)</p>
             </button>
           </div>
 
@@ -298,12 +381,24 @@ const ProductDetails = () => {
               { title: "DETAILS", content: product?.description },
               { title: "CARE", content: product?.care },
             ].map((item, i) => (
-              <div key={i} className={styles.accordionItem} onClick={() => setActiveSection(activeSection === i ? null : i)}>
+              <div
+                key={i}
+                className={styles.accordionItem}
+                onClick={() => setActiveSection(activeSection === i ? null : i)}
+              >
                 <div className={styles.accordionHeader}>
                   <h3>{item.title}</h3>
-                  {activeSection === i ? <Minus size={20} /> : <Plus size={20} />}
+                  {activeSection === i ? (
+                    <Minus size={20} />
+                  ) : (
+                    <Plus size={20} />
+                  )}
                 </div>
-                <div className={`${styles.accordionContent} ${activeSection === i ? styles.active : ""}`}>
+                <div
+                  className={`${styles.accordionContent} ${
+                    activeSection === i ? styles.active : ""
+                  }`}
+                >
                   <p>{item.content}</p>
                 </div>
               </div>
@@ -311,17 +406,24 @@ const ProductDetails = () => {
           </div>
 
           {/* Size Selection Sheet (Triggered if no size selected) */}
-          <BottomSheet open={showSizeSheet} onClose={() => setShowSizeSheet(false)}>
-            <h3 style={{ textAlign: "center", marginBottom: "15px" }}>SELECT A SIZE</h3>
+          <BottomSheet
+            open={showSizeSheet}
+            onClose={() => setShowSizeSheet(false)}
+          >
+            <h3 style={{ textAlign: "center", marginBottom: "15px" }}>
+              SELECT A SIZE
+            </h3>
             <div className={styles.sizeOptionsSheet}>
               {product?.configuration?.[0]?.options.map((s) => (
                 <button
                   key={s.value}
                   onClick={() => {
-                    handleSizeSelect(s.value, true); // true = auto add to cart
+                    handleSizeSelect(s.value, true);
                     setShowSizeSheet(false);
                   }}
-                  className={`${styles.sizeBtn} ${selectedSize === s.value ? styles.activeSize : ""}`}
+                  className={`${styles.sizeBtn} ${
+                    selectedSize === s.value ? styles.activeSize : ""
+                  }`}
                 >
                   {s.label}
                 </button>
@@ -330,7 +432,10 @@ const ProductDetails = () => {
           </BottomSheet>
 
           {/* Success Sheet */}
-          <BottomSheet open={showSuccessCart} onClose={() => setShowSuccessCart(false)}>
+          <BottomSheet
+            open={showSuccessCart}
+            onClose={() => setShowSuccessCart(false)}
+          >
             <AddToCartSuccessSheet relatedData={relatedData} />
           </BottomSheet>
         </div>
