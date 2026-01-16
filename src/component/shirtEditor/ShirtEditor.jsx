@@ -74,21 +74,26 @@ const ShirtEditor = forwardRef(
       captureImage: async () => {
         if (!editorRef.current) return null;
 
-        const selectedFontObj = fonts.find((f) => f.family === selectedFont);
+        try {
+          const selectedFontObj = fonts.find((f) => f.family === selectedFont);
 
-        if (selectedFontObj) {
-          injectFontCSS(selectedFontObj.family, selectedFontObj.downloadUrl);
+          if (selectedFontObj) {
+            injectFontCSS(selectedFontObj.family, selectedFontObj.downloadUrl);
+          }
+
+          // Ensure fonts are loaded before capturing
+          await document.fonts.ready;
+
+          return await toPng(editorRef.current, {
+            cacheBust: true,
+            pixelRatio: 2,
+            // This tells the library NOT to fail if it hits a restricted stylesheet
+            skipFonts: false,
+          });
+        } catch (error) {
+          console.error("Capture failed:", error);
+          return null;
         }
-
-        await document.fonts.load(`16px "${selectedFont}"`);
-        await document.fonts.ready;
-
-        await new Promise((r) => setTimeout(r, 300));
-
-        return await toPng(editorRef.current, {
-          cacheBust: true,
-          pixelRatio: 2,
-        });
       },
     }));
 
@@ -130,24 +135,25 @@ const ShirtEditor = forwardRef(
       loadFonts();
     }, [fonts]);
 
-    /* ================= IOS & SCROLL LOGIC ================= */
     const startTextEditing = () => {
-      setIsEditing(true);
-
-      if (window.innerWidth <= 768) {
-        window.scrollTo({
-          top: window.innerHeight * 0.3,
-          behavior: "smooth",
-        });
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const len = inputRef.current.value.length;
+        inputRef.current.setSelectionRange(len, len);
       }
 
-      requestAnimationFrame(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-          const len = inputRef.current.value.length;
-          inputRef.current.setSelectionRange(len, len);
-        }
-      });
+      // Now safe to update state
+      setIsEditing(true);
+
+      // Optional scroll (after focus)
+      if (window.innerWidth <= 768) {
+        setTimeout(() => {
+          window.scrollTo({
+            top: window.innerHeight * 0.3,
+            behavior: "smooth",
+          });
+        }, 50);
+      }
     };
 
     const handleBlur = (e) => {
@@ -198,6 +204,8 @@ const ShirtEditor = forwardRef(
             height={600}
             className={styles.mainImage}
             priority
+            crossOrigin="anonymous"
+            loading="eager"
             unoptimized
             onLoadingComplete={() => setImageLoaded(true)}
             style={{
@@ -208,16 +216,26 @@ const ShirtEditor = forwardRef(
 
           {product &&
             (isEditing ? (
+              // <textarea
+              //   ref={inputRef}
+              //   className={`${styles.presetText} ${styles.editInput}`}
+              //   value={text}
+              //   onChange={(e) => setText(e.target.value)}
+              //   onBlur={handleBlur}
+              //   onKeyDown={(e) =>
+              //     e.key === "Enter" && !e.shiftKey && handleBlur({})
+              //   }
+              //   style={dynamicStyles}
+              // />
+
               <textarea
                 ref={inputRef}
                 className={`${styles.presetText} ${styles.editInput}`}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                onBlur={handleBlur}
-                onKeyDown={(e) =>
-                  e.key === "Enter" && !e.shiftKey && handleBlur({})
-                }
                 style={dynamicStyles}
+                onBlur={handleBlur}
+                inputMode="text"
               />
             ) : (
               <div

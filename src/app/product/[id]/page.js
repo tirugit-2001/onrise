@@ -18,6 +18,10 @@ import { useCart } from "@/context/CartContext";
 import bag from "../../../assessts/bag.svg";
 import share from "../../../assessts/share.svg";
 import ShirtEditor from "@/component/shirtEditor/ShirtEditor";
+import { load } from "@cashfreepayments/cashfree-js";
+import DynamicModal from "@/component/Modal/Modal";
+import AddToBagLoader from "@/component/AddToBagLoader/AddToBagLoader";
+import { createSlug } from "@/app/helper";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -42,9 +46,11 @@ const ProductDetails = () => {
   const [selectedFont, setSelectedFont] = useState("Arial");
   const [selectedColor, setSelectedColor] = useState("#ffffff");
   const accessToken = Cookies.get("idToken");
+  const [imageUploadLoader, setImageUploadLoader] = useState(false);
+  const [showProductUI, setShowProductUI] = useState(true);
   const editorRef = useRef(null);
-
-  console.log(text, "dskdnskdiiioiiioio", selectedColor);
+  const [resumePayment, setResumePayment] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
 
   useEffect(() => {
     if (product) {
@@ -55,24 +61,37 @@ const ProductDetails = () => {
     }
   }, [product]);
 
-  const handleSizeSelect = (size, autoAdd = false) => {
+  const handleSizeSelect = (size) => {
     setSelectedSize(size);
+
     const match = product?.configuration?.[0]?.options.find(
       (item) => item.value === size
     );
-    setSizeInfo(match || null);
 
-    if (autoAdd) {
+    setSizeInfo(match || null);
+    setShowSizeSheet(false);
+
+    // 🔥 Resume correct action
+    if (pendingAction === "PAY_NOW") {
+      setPendingAction(null);
+      proceedWithPayment();
+    }
+
+    if (pendingAction === "ADD_TO_CART") {
+      setPendingAction(null);
       processAddToCart(size);
     }
   };
 
   const addToCart = async () => {
     setIsEditing(false);
-    if (product?.configuration?.length > 0 && !selectedSize) {
+
+    if (!sizeInfo) {
+      setPendingAction("ADD_TO_CART");
       setShowSizeSheet(true);
       return;
     }
+
     await processAddToCart(selectedSize);
   };
 
@@ -88,10 +107,6 @@ const ProductDetails = () => {
       console.error("Capture image error:", error);
     }
 
-    console.log(product, "dnsdsjdiuuyyyyy");
-
-
-    console.log(product,"djkjkjdfijfidfidfidnvnvnvn")
     const payload = {
       productId: product.id,
       categoryId: product.categoryId,
@@ -103,7 +118,7 @@ const ProductDetails = () => {
       totalPrice: (product.discountedPrice || product.basePrice) * quantity,
       isCustomizable: product.isCustomizable,
       productImageUrl: capturedImageUrl || product.productImages?.[0] || "",
-      renderedImageUrl: capturedImageUrl,
+      renderedImageUrl: product.productImages?.[0],
       dimensions: {
         length: product.dimension?.length || 0,
         width: product.dimension?.width || 0,
@@ -117,11 +132,9 @@ const ProductDetails = () => {
       fontFamily: selectedFont,
       fontSize: selectedSize,
       canvasImage: product.canvasImage,
-      illustrationImage:product.illustrationImage,
-      fullProductUrl:product.productImages[0]
+      illustrationImage: product.illustrationImage,
+      fullProductUrl: product.productImages[0],
     };
-
-    console.log(payload, "dskdnskdoooooooo");
 
     try {
       const existingItem = await db.cart
@@ -180,24 +193,34 @@ const ProductDetails = () => {
     }
   };
 
+
+  
   const handleShare = async () => {
-    const shareUrl = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: product?.name || "Check this out!",
-          url: shareUrl,
-        });
-      } catch (error) {
-        console.log("Share cancelled", error);
-      }
-    } else {
-      window.open(
-        `https://wa.me/?text=${encodeURIComponent(shareUrl)}`,
-        "_blank"
-      );
+  if (!product?.name) return;
+
+  const slug = createSlug(product?.slug);
+  const shareUrl = `https://onrise.in/product/${slug}`;
+  const title = product.name;
+  const text = title;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title,
+        text,
+        url: shareUrl,
+      });
+    } catch (error) {
+      console.log("Share cancelled", error);
     }
-  };
+  } else {
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(`${title}\n${shareUrl}`)}`,
+      "_blank"
+    );
+  }
+};
+
 
   // --- Effects ---
 
@@ -245,205 +268,345 @@ const ProductDetails = () => {
 
   if (loading && !product) return <ProductDetailsShimmer />;
 
+  const uploadImagePayload = {
+    printText: text,
+    textColor: selectedColor,
+    fontFamily: selectedFont,
+    fontSize: selectedSize,
+    illustrationImage: product?.illustrationImage,
+  };
+
+  const handlePayNow = async () => {
+    setIsEditing(false);
+
+    if (!sizeInfo) {
+      setPendingAction("PAY_NOW");
+      setShowSizeSheet(true);
+      return;
+    }
+
+    await proceedWithPayment();
+  };
+
+  const proceedWithPayment = async () => {
+    try {
+      setImageUploadLoader(true);
+      let renderedImageUrl = null;
+
+      if (uploadImagePayload) {
+        const uploadRes = await api.post(
+          "/v1/cart/upload-image",
+          { printingImgText: uploadImagePayload },
+          {
+            headers: {
+              "x-api-key":
+                "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+            },
+          }
+        );
+
+        renderedImageUrl = uploadRes?.data?.data?.renderedImageUrl || null;
+      }
+
+      const finalItems = [
+        {
+          imageUrl: renderedImageUrl,
+          name: product.name,
+          sku: product.sku || product.productId,
+          productImageUrl: product?.fullProductUrl,
+          categoryId: product.categoryId,
+          isCustomizable: !!product.isCustomizable,
+          discount: product.discount || 0,
+          tax: product.tax || 0,
+          hsn: product.hsn || null,
+          quantity: 1,
+          totalPrice: product?.discountedPrice,
+          options: [{ label: "Size", value: sizeInfo }],
+        },
+      ];
+
+      const orderRes = await api.post(
+        "/v1/orders/create",
+        {
+          paymentMethod: "ONLINE",
+          totalAmount: product?.discountedPrice,
+          items: finalItems,
+        },
+        {
+          headers: {
+            "x-api-key":
+              "454ccaf106998a71760f6729e7f9edaf1df17055b297b3008ff8b65a5efd7c10",
+          },
+        }
+      );
+
+      const orderData = orderRes?.data?.data;
+      const paymentSessionId = orderData?.cashfree?.sessionId;
+      const cashfreeOrderId = orderData?.cashfree?.orderId;
+      const backendOrderId = orderData?.orderId;
+
+      if (!paymentSessionId) {
+        toast.error("Payment session not generated");
+        return;
+      }
+
+      localStorage.setItem("pendingOrderId", backendOrderId);
+      localStorage.setItem("pendingCashfreeOrderId", cashfreeOrderId);
+      localStorage.setItem("pendingOrderAmount", product?.discountedPrice);
+
+      setShowProductUI(false);
+
+      const cashfree = await load({ mode: "production" });
+
+      cashfree
+        .checkout({
+          paymentSessionId,
+          redirectTarget: document.getElementById("cashfree-dropin"),
+        })
+        .then((result) => {
+          if (result?.paymentDetails) {
+            window.location.href = `/order-success?order_id=${cashfreeOrderId}`;
+          } else if (result?.error) {
+            toast.error("Payment failed");
+            setShowProductUI(true);
+          }
+        });
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast.error("Failed to initiate payment");
+      setShowProductUI(true);
+    } finally {
+      setImageUploadLoader(false);
+    }
+  };
+
   return (
     <>
-      <div className={styles.container}>
-        <ToastContainer position="top-right" autoClose={2000} />
+      <div
+        id="cashfree-dropin"
+        style={{
+          width: "100%",
+          height: showProductUI ? "0" : "auto",
+          display: showProductUI ? "none" : "block",
+          display: "flex",
+          justifyContent: "center",
+          overflow: "hidden",
+        }}
+      />
 
-        {/* Header Icons */}
-        <div className={styles.back} onClick={() => router.back()}>
-          <ChevronLeft size={30} />
-        </div>
-        <div className={styles.mobileIconsContainer}>
-          <div className={styles.mobileIconsRight}>
-            <button
-              className={styles.mobileIcon}
-              onClick={() => router.push("/cart")}
-            >
-              {cartCount > 0 && (
-                <span className={styles.badge}>{cartCount}</span>
-              )}
-              <Image src={bag} alt="bag" />
-            </button>
-            <button className={styles.mobileIcon} onClick={handleWishlistClick}>
-              <Heart
-                size={40}
-                stroke={isWishlisted ? "red" : "black"}
-                fill={isWishlisted ? "red" : "transparent"}
-              />
-            </button>
-            <button className={styles.mobileIcon} onClick={handleShare}>
-              <Image src={share} alt="share" />
-            </button>
-          </div>
-        </div>
+      {showProductUI && (
+        <>
+          <div className={styles.container}>
+            <ToastContainer position="top-right" autoClose={2000} />
 
-        {/* Product Visual Section */}
-        {product?.isCustomizable ? (
-          <ShirtEditor
-            product={product}
-            ref={editorRef}
-            isEditing={isEditing}
-            setIsEditing={setIsEditing}
-            text={text}
-            setText={setText}
-            selectedSize={selectedSize}
-            selectedFont={selectedFont}
-            selectedColor={selectedColor}
-            setSelectedColor={setSelectedColor}
-            setSelectedFont={setSelectedFont}
-            setSelectedSize={setSelectedSize}
-          />
-        ) : (
-          <Image
-            src={product?.productImages[0]}
-            alt="product"
-            width={500}
-            height={600}
-            className={styles.mainImage}
-            priority
-          />
-        )}
-
-        {/* Info Section */}
-        <div
-          className={`${styles.infoSection} ${
-            !isCustomizable && styles.infoSection_img
-          }`}
-        >
-          <div className={styles.priceSection}>
-            <h1>{product?.name}</h1>
-          </div>
-          <div className={styles.dis_price}>
-            <p className={styles.discountedPrice}>
-              ₹ {product?.discountedPrice}
-            </p>
-            <p className={styles.basePrice}>₹ {product?.basePrice}</p>
-            {product?.discountedPrice && product?.basePrice && (
-              <span className={styles.offerTag}>
-                {Math.round(
-                  ((product.basePrice - product.discountedPrice) /
-                    product.basePrice) *
-                    100
-                )}
-                % OFF
-              </span>
-            )}
-          </div>
-
-          {/* Size Selection */}
-          {product?.configuration?.[0]?.options?.length > 0 && (
-            <div className={styles.sizes}>
-              <h4>SELECT SIZE</h4>
-              {sizeInfo && (
-                <div className={styles.sizeDetailsBox}>
-                  <span>Chest: {sizeInfo?.options[0]?.value} cm</span>
-                  <span>Length: {sizeInfo?.options[1]?.value} cm</span>
-                  {sizeInfo?.options.length > 2 && (
-                    <span>Sleeves: {sizeInfo?.options[2]?.value} cm</span>
+            {/* Header Icons */}
+            <div className={styles.back} onClick={() => router.back()}>
+              <ChevronLeft size={30} />
+            </div>
+            <div className={styles.mobileIconsContainer}>
+              <div className={styles.mobileIconsRight}>
+                <button
+                  className={styles.mobileIcon}
+                  onClick={() => router.push("/cart")}
+                >
+                  {cartCount > 0 && (
+                    <span className={styles.badge}>{cartCount}</span>
                   )}
+                  <Image src={bag} alt="bag" />
+                </button>
+                <button
+                  className={styles.mobileIcon}
+                  onClick={handleWishlistClick}
+                >
+                  <Heart
+                    size={40}
+                    stroke={isWishlisted ? "red" : "black"}
+                    fill={isWishlisted ? "red" : "transparent"}
+                  />
+                </button>
+                <button className={styles.mobileIcon} onClick={handleShare}>
+                  <Image src={share} alt="share" />
+                </button>
+              </div>
+            </div>
+
+            {product?.isCustomizable ? (
+              <ShirtEditor
+                product={product}
+                ref={editorRef}
+                isEditing={isEditing}
+                setIsEditing={setIsEditing}
+                text={text}
+                setText={setText}
+                selectedSize={selectedSize}
+                selectedFont={selectedFont}
+                selectedColor={selectedColor}
+                setSelectedColor={setSelectedColor}
+                setSelectedFont={setSelectedFont}
+                setSelectedSize={setSelectedSize}
+              />
+            ) : (
+              <Image
+                src={product?.productImages[0]}
+                alt="product"
+                width={500}
+                height={600}
+                className={styles.mainImage}
+                crossOrigin="anonymous"
+                loading="eager"
+                priority
+              />
+            )}
+
+            {/* Info Section */}
+            <div
+              className={`${styles.infoSection} ${
+                !isCustomizable && styles.infoSection_img
+              }`}
+            >
+              <div className={styles.priceSection}>
+                <h1>{product?.name}</h1>
+              </div>
+              <div className={styles.dis_price}>
+                <p className={styles.discountedPrice}>
+                  ₹ {product?.discountedPrice}
+                </p>
+                <p className={styles.basePrice}>₹ {product?.basePrice}</p>
+                {product?.discountedPrice && product?.basePrice && (
+                  <span className={styles.offerTag}>
+                    {Math.round(
+                      ((product.basePrice - product.discountedPrice) /
+                        product.basePrice) *
+                        100
+                    )}
+                    % OFF
+                  </span>
+                )}
+              </div>
+
+              {/* Size Selection */}
+              {product?.configuration?.[0]?.options?.length > 0 && (
+                <div className={styles.sizes}>
+                  <h4>SELECT SIZE</h4>
+                  {sizeInfo && (
+                    <div className={styles.sizeDetailsBox}>
+                      <span>Chest: {sizeInfo?.options[0]?.value} cm</span>
+                      <span>Length: {sizeInfo?.options[1]?.value} cm</span>
+                      {sizeInfo?.options.length > 2 && (
+                        <span>Sleeves: {sizeInfo?.options[2]?.value} cm</span>
+                      )}
+                    </div>
+                  )}
+                  <div className={styles.sizeOptions}>
+                    {product?.configuration[0].options.map((s) => (
+                      <button
+                        key={s.value}
+                        onClick={() => handleSizeSelect(s.value)}
+                        className={`${styles.sizeBtn} ${
+                          selectedSize === s.value ? styles.activeSize : ""
+                        }`}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
-              <div className={styles.sizeOptions}>
-                {product?.configuration[0].options.map((s) => (
-                  <button
-                    key={s.value}
-                    className={`${styles.sizeBtn} ${
-                      selectedSize === s.value ? styles.activeSize : ""
-                    }`}
-                    onClick={() => handleSizeSelect(s.value)}
+
+              <div className={styles.button_wrapper}>
+                <button className={styles.buyit_btn} onClick={handlePayNow}>
+                  {"BUY IT NOW"}
+                  <p>(click to select size)</p>
+                </button>
+                <button
+                  className={styles.addToCart}
+                  onClick={addToCart}
+                  disabled={loader}
+                >
+                  {loader ? "ADDING..." : "ADD TO BAG"}
+                  <p>(click to select size)</p>
+                </button>
+              </div>
+
+              {/* Details Accordion */}
+              <div className={styles.accordion}>
+                {[
+                  { title: "DETAILS", content: product?.description },
+                  { title: "CARE", content: product?.care },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className={styles.accordionItem}
+                    onClick={() =>
+                      setActiveSection(activeSection === i ? null : i)
+                    }
                   >
-                    {s.label}
-                  </button>
+                    <div className={styles.accordionHeader}>
+                      <h3>{item.title}</h3>
+                      {activeSection === i ? (
+                        <Minus size={20} />
+                      ) : (
+                        <Plus size={20} />
+                      )}
+                    </div>
+                    <div
+                      className={`${styles.accordionContent} ${
+                        activeSection === i ? styles.active : ""
+                      }`}
+                    >
+                      <p>{item.content}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
-          )}
 
-          <div className={styles.button_wrapper}>
-            <button className={styles.buyit_btn} onClick={addToCart}>
-              {"BUY IT NOW"}
-              <p>(click to select size)</p>
-            </button>
-            <button
-              className={styles.addToCart}
-              onClick={addToCart}
-              disabled={loader}
-            >
-              {loader ? "ADDING..." : "ADD TO BAG"}
-              <p>(click to select size)</p>
-            </button>
-          </div>
-
-          {/* Details Accordion */}
-          <div className={styles.accordion}>
-            {[
-              { title: "DETAILS", content: product?.description },
-              { title: "CARE", content: product?.care },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className={styles.accordionItem}
-                onClick={() => setActiveSection(activeSection === i ? null : i)}
+              {/* Size Selection Sheet (Triggered if no size selected) */}
+              <BottomSheet
+                open={showSizeSheet}
+                onClose={() => setShowSizeSheet(false)}
               >
-                <div className={styles.accordionHeader}>
-                  <h3>{item.title}</h3>
-                  {activeSection === i ? (
-                    <Minus size={20} />
-                  ) : (
-                    <Plus size={20} />
-                  )}
+                <h3 style={{ textAlign: "center", marginBottom: "15px" }}>
+                  SELECT A SIZE
+                </h3>
+                <div className={styles.sizeOptionsSheet}>
+                  {product?.configuration?.[0]?.options.map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => {
+                        handleSizeSelect(s.value);
+                      }}
+                      className={`${styles.sizeBtn} ${
+                        selectedSize === s.value ? styles.activeSize : ""
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
                 </div>
-                <div
-                  className={`${styles.accordionContent} ${
-                    activeSection === i ? styles.active : ""
-                  }`}
-                >
-                  <p>{item.content}</p>
-                </div>
-              </div>
-            ))}
+              </BottomSheet>
+
+              <DynamicModal
+                open={imageUploadLoader}
+                onClose={() => setImageUploadLoader(false)}
+              >
+                <AddToBagLoader />
+              </DynamicModal>
+
+              {/* Success Sheet */}
+              <BottomSheet
+                open={showSuccessCart}
+                onClose={() => setShowSuccessCart(false)}
+              >
+                <AddToCartSuccessSheet relatedData={relatedData} />
+              </BottomSheet>
+            </div>
           </div>
 
-          {/* Size Selection Sheet (Triggered if no size selected) */}
-          <BottomSheet
-            open={showSizeSheet}
-            onClose={() => setShowSizeSheet(false)}
-          >
-            <h3 style={{ textAlign: "center", marginBottom: "15px" }}>
-              SELECT A SIZE
-            </h3>
-            <div className={styles.sizeOptionsSheet}>
-              {product?.configuration?.[0]?.options.map((s) => (
-                <button
-                  key={s.value}
-                  onClick={() => {
-                    handleSizeSelect(s.value, true);
-                    setShowSizeSheet(false);
-                  }}
-                  className={`${styles.sizeBtn} ${
-                    selectedSize === s.value ? styles.activeSize : ""
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </BottomSheet>
-
-          {/* Success Sheet */}
-          <BottomSheet
-            open={showSuccessCart}
-            onClose={() => setShowSuccessCart(false)}
-          >
-            <AddToCartSuccessSheet relatedData={relatedData} />
-          </BottomSheet>
-        </div>
-      </div>
-
-      <section style={{ width: "100%", overflowX: "auto" }}>
-        <Suggested relatedData={relatedData} />
-      </section>
+          <section style={{ width: "100%", overflowX: "auto" }}>
+            <Suggested relatedData={relatedData} />
+          </section>
+        </>
+      )}
     </>
   );
 };

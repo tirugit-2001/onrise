@@ -18,30 +18,12 @@ export default function OrderSuccess() {
 
   useEffect(() => {
     const verifyPayment = async () => {
-      // Try to get order_id from URL parameters first (from Cashfree redirect)
-      const urlParams = new URLSearchParams(window.location.search);
-      const orderIdFromUrl = urlParams.get("order_id");
-      
-      let orderId = localStorage.getItem("pendingOrderId");
-      let cashfreeOrderId = localStorage.getItem("pendingCashfreeOrderId");
+      const orderId = localStorage.getItem("pendingOrderId");
+      const cashfreeOrderId = localStorage.getItem("pendingCashfreeOrderId");
       const orderAmount = localStorage.getItem("pendingOrderAmount");
 
-      // If we have order_id from URL but not in localStorage, try to get cashfreeOrderId from URL
-      if (orderIdFromUrl && !orderId) {
-        orderId = orderIdFromUrl;
-        // Try to extract cashfreeOrderId from URL or use orderId as fallback
-        cashfreeOrderId = urlParams.get("cf_order_id") || orderIdFromUrl;
-      }
-
-      console.log("Order data from localStorage and URL:", {
-        orderId,
-        cashfreeOrderId,
-        orderAmount,
-        orderIdFromUrl,
-      });
-
       if (!orderId || !cashfreeOrderId) {
-        console.error("Missing order data in localStorage and URL");
+        console.error("Missing order data in localStorage");
         toast.error("Order data not found. Please check your orders.");
         setError(true);
         setLoading(false);
@@ -85,10 +67,8 @@ export default function OrderSuccess() {
 
   const checkPaymentStatus = async (orderId, cashfreeOrderId) => {
     try {
-      console.log("Checking payment status:", { orderId, cashfreeOrderId });
-
       const res = await api.post(
-        "/v1/payment/status", // Note: singular "payment" not "payments"
+        "/v1/payment/status",
         {
           cashfreeOrderId: cashfreeOrderId,
           orderId: orderId,
@@ -101,11 +81,8 @@ export default function OrderSuccess() {
         }
       );
 
-      console.log("Payment status response:", res.data);
-
       if (res.data.success) {
         localStorage.setItem("orderId",res?.data?.data?.orderId)
-        // Check if order was already confirmed (backend processed it)
         if (
           res.data.message?.includes("already confirmed") ||
           res.data.message?.includes("Order placed successfully")
